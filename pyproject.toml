@@ -1,0 +1,85 @@
+[build-system]
+requires = [
+    "setuptools >= 42",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ptetools"
+description="""\
+    Python package with various tools. \
+"""
+maintainers = [
+    {name = "Pieter Eendebak", email = "pieter.eendebak@gmail.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+keywords = [
+]
+dynamic = ["version"]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "rich",
+]
+
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint."messages control"]
+disable = ["missing-docstring", "logging-fstring-interpolation", "no-else-return"]
+enable = ["useless-suppression"]
+
+[tool.pylint.miscellaneous]
+notes = ["FIXME", "TODO"]
+
+
+[tool.coverage.run]
+source = ["./src/ptools"]
+command_line = "-m pytest --junitxml=report.xml tests"
+omit = []
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+
+[tool.ruff]
+src = ["src"]
+select = ["E", "F", "UP", "I"]
+ignore = [ "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`, ignore for performance
+           "E712" # https://github.com/astral-sh/ruff/issues/4560
+        ]
+line-length = 120
+target-version = "py310"
+include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
+
+per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
+
+
