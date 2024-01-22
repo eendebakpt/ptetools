@@ -1,4 +1,6 @@
-Copyright 2024 Pieter Eendebak
+Unless stated otherwise in the source code
+
+Copyright 2024- Pieter Eendebak
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

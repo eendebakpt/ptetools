@@ -34,6 +34,8 @@ dependencies = [
     "rich",
 ]
 
+[tool.setuptools.dynamic]
+version = {attr = "ptetools.__version__"}
 
 [tool.black]
 line-length = 120
