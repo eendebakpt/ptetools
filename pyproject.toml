@@ -32,7 +32,8 @@ dependencies = [
     "numpy",
     "matplotlib",
     "rich",
-    "qtpy"
+    "qtpy",
+    "PyQt5",
 ]
 
 [tool.setuptools.dynamic]
