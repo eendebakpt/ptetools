@@ -13,3 +13,12 @@ For development use the -e flag when installing from source code.
 ```bash
 pip install -e . --upgrade
 ```
+
+
+## Development
+
+Build new package
+```
+python -m build . --sdist
+twine upload ...
+````
