@@ -10,6 +10,40 @@ import matplotlib.pyplot as plt
 import numpy as np
 import qtpy
 
+
+def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
+    """Plot labels next to points
+
+    Args:
+        xx (2xN array): Positions to plot the labels
+        labels: Labels to plot
+        *kwargs: arguments past to plotting function
+    Example:
+    >>> points = np.random.rand(2, 10)
+    >>> fig=plt.figure(10); plt.clf()
+    >>> _ = plotPoints(points, '.'); _ = plotLabels(points)
+    """
+
+    if len(np.array(points).shape) == 1 and points.shape[0] == 2:
+        points = points.reshape((2, 1))
+    npoints = points.shape[1]
+
+    if labels is None:
+        lbl = ["%d" % i for i in range(npoints)]
+    else:
+        lbl = labels
+        if isinstance(lbl, int):
+            lbl = [str(lbl)]
+        elif isinstance(lbl, str):
+            lbl = [str(lbl)]
+    ax = plt.gca()
+    th = [None] * npoints
+    for ii in range(npoints):
+        lbltxt = str(lbl[ii])
+        th[ii] = ax.annotate(lbltxt, points[:, ii], **kwargs)
+    return th
+
+
 """
 
 Copyright 2023 QuTech (TNO, TU Delft)
