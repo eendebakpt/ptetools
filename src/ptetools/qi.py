@@ -5,20 +5,20 @@ from quantuminspire.credentials import get_token_authentication, load_account
 from quantuminspire.qiskit import QI
 
 
-def starmon5_backend(backend: str = "Starmon-5") -> Any:
+def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | None = None) -> Any:
     """Connect to QI Starmon backend
 
+    Args:
+        backend: Name of the backend can be "Starmon-5" or "QX single-node simulator"
     Returns:
         Tuple with backend name and backend
     """
     authentication = get_token_authentication(load_account())
 
-    backend = "QX single-node simulator"
-    backend = "Starmon-5"
     QI.set_authentication(authentication)
-    qi_backend = QI.get_backend(backend)
-    number_of_shots = 4 * 2048
-    qi_backend.options.shots = number_of_shots  # for starmon-5 overhead is in compilation
+    qi_backend = QI.get_backend(backend_name)
+    if number_of_shots:
+        qi_backend.options.shots = number_of_shots  # for starmon-5 overhead is in compilation
     return qi_backend
 
 
