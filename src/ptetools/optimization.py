@@ -197,7 +197,8 @@ class OptimizerCallback:
 
         self.data.plot("iteration", "residual", ax=ax, **kwargs)
         dt = self.optimization_time()
-        ax.set_title(f"Optimization total time {dt:.2f} [s]")
+        residual = self.data["residual"].iloc[-1]
+        ax.set_title(f"Optimization total time {dt:.2f} [s], residual {residual:.2g}")
         if self._residual_fitting:
             ax.set_ylabel("Residual")
         else:
