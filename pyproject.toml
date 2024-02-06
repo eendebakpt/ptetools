@@ -34,6 +34,9 @@ dependencies = [
     "rich",
     "qtpy",
     "PyQt5",
+    "lmfit",
+    "qiskit",
+    "quantuminspire"
 ]
 
 [tool.setuptools.dynamic]
@@ -45,9 +48,6 @@ line-length = 120
 [tool.isort]
 profile = "black"
 line_length = 120
-
-[tool.mypy]
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = [
@@ -87,3 +87,7 @@ include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
 
 
+[tool.mypy]
+mypy_path="./src"
+ignore_missing_imports = true
+exclude = "(.*/untitled.*|.*/debug_.*.py|.*/develop_.*.py)"
