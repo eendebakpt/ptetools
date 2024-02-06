@@ -49,9 +49,6 @@ line-length = 120
 profile = "black"
 line_length = 120
 
-[tool.mypy]
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 testpaths = [
     "tests",
@@ -92,4 +89,5 @@ per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github
 
 [tool.mypy]
 mypy_path="./src"
+ignore_missing_imports = true
 exclude = "(.*/untitled.*|.*/debug_.*.py|.*/develop_.*.py)"

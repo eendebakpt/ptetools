@@ -29,7 +29,7 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
     npoints = points.shape[1]
 
     if labels is None:
-        lbl = ["%d" % i for i in range(npoints)]
+        lbl: Sequence[str] = ["%d" % i for i in range(npoints)]
     else:
         lbl = labels
         if isinstance(lbl, int):
@@ -37,7 +37,7 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
         elif isinstance(lbl, str):
             lbl = [str(lbl)]
     ax = plt.gca()
-    th = [None] * npoints
+    th: list[Any] = [None] * npoints
     for ii in range(npoints):
         lbltxt = str(lbl[ii])
         th[ii] = ax.annotate(lbltxt, points[:, ii], **kwargs)
@@ -77,13 +77,12 @@ def monitorSizes(verbose: int = 0) -> list[tuple[int]]:
     Returns:
         List with for each screen a list x, y, width, height
     """
-    _ = qtpy.QtWidgets.QApplication.instance()
-
-    _qd = qtpy.QtWidgets.QDesktopWidget()
+    _ = qtpy.QtWidgets.QApplication.instance()  # type: ignore
+    _qd = qtpy.QtWidgets.QDesktopWidget()  # type: ignore
 
     nmon = _qd.screenCount()
     monitor_rectangles = [_qd.screenGeometry(ii) for ii in range(nmon)]
-    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]
+    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]  # type: ignore
 
     if verbose:
         for ii, w in enumerate(monitor_sizes):
@@ -130,7 +129,7 @@ def tilefigs(
 
     """
     if geometry is None:
-        geometry = [2, 2]
+        geometry = (2, 2)
     mngr = plt.get_current_fig_manager()
     be = matplotlib.get_backend()
     if monitorindex is None:
@@ -139,8 +138,8 @@ def tilefigs(
     if ww is None:
         ww = monitorSizes()[monitorindex]
 
-    w = ww[2] / geometry[0]
-    h = ww[3] / geometry[1]
+    w = ww[2] / geometry[0]  # type: ignore
+    h = ww[3] / geometry[1]  # type: ignore
 
     if isinstance(lst, int):
         lst = [lst]
@@ -165,8 +164,8 @@ def tilefigs(
         iim = ii % np.prod(geometry)
         ix = iim % geometry[0]
         iy = int(np.floor(float(iim) / geometry[0]))
-        x: int = int(ww[0]) + int(ix * w)
-        y: int = int(ww[1]) + int(iy * h)
+        x: int = int(ww[0]) + int(ix * w)  # type: ignore
+        y: int = int(ww[1]) + int(iy * h)  # type: ignore
         if verbose:
             print("ii %d: %d %d: f %d: %d %d %d %d" % (ii, ix, iy, fignum, x, y, w, h))
         if be == "WXAgg":
