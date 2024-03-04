@@ -36,7 +36,8 @@ dependencies = [
     "PyQt5",
     "lmfit",
     "qiskit",
-    "quantuminspire"
+    "quantuminspire",
+    "termcolor"
 ]
 
 [tool.setuptools.dynamic]

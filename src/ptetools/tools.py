@@ -9,6 +9,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import qtpy
+from termcolor import colored
+
+
+def cprint(s: str, color: str = "cyan", *args, **kwargs):
+    """Colored print of string"""
+    print(colored(s, color=color), *args, **kwargs)
 
 
 def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
@@ -42,6 +48,38 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
         lbltxt = str(lbl[ii])
         th[ii] = ax.annotate(lbltxt, points[:, ii], **kwargs)
     return th
+
+
+def memory_report(
+    maximum_number_to_show: int = 24, minimal_number_of_instances: int = 100, verbose: bool = True
+) -> dict[str, int]:
+    """Show information about objects with most occurences in memory
+
+    For a more detailed analysis: check the heapy package (https://github.com/zhuyifei1999/guppy3/)
+    """
+    import gc
+    import operator
+
+    rr: dict = {}
+    for obj in gc.get_objects():
+        tt = type(obj)
+        rr[tt] = rr.get(tt, 0) + 1
+
+    rr_many = {key: number for key, number in rr.items() if number > minimal_number_of_instances}
+    rr_many = {key: value for key, value in sorted(rr_many.items(), key=operator.itemgetter(1), reverse=True)}
+
+    keys = list(rr_many.keys())
+
+    if verbose:
+        print("memory report:")
+    for key in keys[:maximum_number_to_show]:
+        nn = rr_many[key]
+        if nn > 2000:
+            if verbose:
+                print(f"{key}: {nn}")
+
+    results = {str(key): value for key, value in rr_many.items()}
+    return results
 
 
 """
