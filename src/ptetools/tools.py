@@ -7,8 +7,14 @@ from typing import Any, Literal
 
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.pylab as pylab
 import numpy as np
 import qtpy
+from termcolor import colored
+
+def cprint(s: str, color: str = "cyan", *args, **kwargs):
+    """Colored print of string"""
+    print(colored(s, color=color), *args, **kwargs)
 
 
 def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
@@ -42,6 +48,38 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
         lbltxt = str(lbl[ii])
         th[ii] = ax.annotate(lbltxt, points[:, ii], **kwargs)
     return th
+
+
+def memory_report(
+    maximum_number_to_show: int = 24, minimal_number_of_instances: int = 100, verbose: bool = True
+) -> dict[str, int]:
+    """Show information about objects with most occurences in memory
+
+    For a more detailed analysis: check the heapy package (https://github.com/zhuyifei1999/guppy3/)
+    """
+    import gc
+    import operator
+
+    rr: dict = {}
+    for obj in gc.get_objects():
+        tt = type(obj)
+        rr[tt] = rr.get(tt, 0) + 1
+
+    rr_many = {key: number for key, number in rr.items() if number > minimal_number_of_instances}
+    rr_many = {key: value for key, value in sorted(rr_many.items(), key=operator.itemgetter(1), reverse=True)}
+
+    keys = list(rr_many.keys())
+
+    if verbose:
+        print("memory report:")
+    for key in keys[:maximum_number_to_show]:
+        nn = rr_many[key]
+        if nn > 2000:
+            if verbose:
+                print(f"{key}: {nn}")
+
+    results = {str(key): value for key, value in rr_many.items()}
+    return results
 
 
 """
@@ -288,3 +326,38 @@ def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz"
     r = subprocess.Popen([gui, statsfile])
 
     return statsfile, r
+
+
+def ginput(number_of_points=1, marker : str | None='.', linestyle='', **kwargs) :
+    """ Select points from matplotlib figure
+
+    Press middle mouse button to stop selection
+
+    Arguments:
+        number_of_points: number of points to select
+        marker: Marker style for plotting. If None, do not plot
+        kwargs : Arguments passed to plot function
+    Returns:
+        Numpy array with selected points
+    """
+    kwargs = {'linestyle': ''} | kwargs 
+    xx = np.ones(( number_of_points, 2)) * np.nan
+    for ii in range(number_of_points):
+        x = pylab.ginput(1)
+        if len(x) == 0:
+            break
+        x = np.asarray(x)
+        xx[ii, :] = x.flat
+        if marker is not None:
+            plt.plot(xx[:ii+1, 0].T, xx[:ii+1, 1].T, marker=marker, **kwargs)
+            plt.draw()
+    plt.pause(1e-3)
+    return xx
+
+if __name__=='__main__':
+    plt.figure(10); plt.clf()
+    plt.plot([0,1,2,3], [0,3,1,3], '.-')
+    plt.draw()
+    x=ginput(7)
+    
+

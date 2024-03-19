@@ -3,7 +3,7 @@ import time
 import unittest
 from contextlib import redirect_stdout
 
-from ptetools.tools import measure_time
+from ptetools.tools import cprint, measure_time
 
 
 class TestTools(unittest.TestCase):
@@ -18,3 +18,14 @@ class TestTools(unittest.TestCase):
         with measure_time(None) as m:
             self.assertIsInstance(m.current_delta_time, float)
             self.assertTrue(m.current_delta_time >= 0, "current time must always be positive")
+
+
+def test_cprint():
+    with redirect_stdout(io.StringIO()) as f:
+        cprint("hi")
+    value = f.getvalue()
+    assert value == "\x1b[36mhi\x1b[0m\n" or value == 'hi\n'
+
+
+if __name__ == "__main__":
+    unittest.main()
