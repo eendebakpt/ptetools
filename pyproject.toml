@@ -10,6 +10,7 @@ name = "ptetools"
 description="""\
     Python package with various tools. \
 """
+readme = "README.md"
 maintainers = [
     {name = "Pieter Eendebak", email = "pieter.eendebak@gmail.com"},
 ]

@@ -82,7 +82,7 @@ def memory_report(
     return results
 
 
-"""
+""" Code below is derived from QTT
 
 Copyright 2023 QuTech (TNO, TU Delft)
 
