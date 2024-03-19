@@ -24,7 +24,7 @@ def test_cprint():
     with redirect_stdout(io.StringIO()) as f:
         cprint("hi")
     value = f.getvalue()
-    assert value == "\x1b[36mhi\x1b[0m\n" or value == 'hi\n
+    assert value == "\x1b[36mhi\x1b[0m\n" or value == 'hi\n'
 
 
 if __name__ == "__main__":
