@@ -12,6 +12,9 @@ import numpy as np
 import qtpy
 from termcolor import colored
 
+def sorted_dictionary(d : dict[Any, Any]) ->  dict[Any, Any]:
+    return {k: d[k] for k in sorted(d)}
+
 def cprint(s: str, color: str = "cyan", *args, **kwargs):
     """Colored print of string"""
     print(colored(s, color=color), *args, **kwargs)
