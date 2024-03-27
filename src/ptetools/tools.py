@@ -12,6 +12,13 @@ import numpy as np
 import qtpy
 from termcolor import colored
 
+
+def make_blocks(size : int , block_size: int ) ->list[tuple[int, int]]:
+    """ Create blocks of specified size """
+    number_of_blocks = (size+block_size-1)//block_size
+    blocks = [ (ii*block_size, min(size, (ii+1)*block_size)) for ii in range(number_of_blocks)]
+    return blocks
+
 def sorted_dictionary(d : dict[Any, Any]) ->  dict[Any, Any]:
     return {k: d[k] for k in sorted(d)}
 
