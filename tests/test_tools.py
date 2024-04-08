@@ -2,8 +2,9 @@ import io
 import time
 import unittest
 from contextlib import redirect_stdout
+import pytest
 
-from ptetools.tools import cprint, measure_time
+from ptetools.tools import cprint, measure_time, sorted_dictionary, make_blocks
 
 
 class TestTools(unittest.TestCase):
@@ -19,7 +20,22 @@ class TestTools(unittest.TestCase):
             self.assertIsInstance(m.current_delta_time, float)
             self.assertTrue(m.current_delta_time >= 0, "current time must always be positive")
 
-
+    def sorted_dictionary(self):
+        d=sorted_dictionary({'b': 0, 'a': 2})
+        assert str(d)=="{'a': 2, 'b': 0}"
+        
+        with pytest.raises(TypeError):
+            sorted_dictionary(10)
+        
+    def test_make_blocks(self):
+        
+        assert make_blocks(5, 2) == [(0, 2), (2, 4), (4, 5)]
+        assert make_blocks(3, 4) == [(0, 3)]
+        assert make_blocks(0, 4) == []
+        with pytest.raises(ZeroDivisionError):
+            make_blocks(0, 0) 
+        
+        
 def test_cprint():
     with redirect_stdout(io.StringIO()) as f:
         cprint("hi")
