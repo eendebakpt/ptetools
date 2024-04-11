@@ -6,11 +6,23 @@ from types import TracebackType
 from typing import Any, Literal
 
 import matplotlib
-import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
+import matplotlib.pyplot as plt
 import numpy as np
 import qtpy
 from termcolor import colored
+
+
+def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
+    """Create blocks of specified size"""
+    number_of_blocks = (size + block_size - 1) // block_size
+    blocks = [(ii * block_size, min(size, (ii + 1) * block_size)) for ii in range(number_of_blocks)]
+    return blocks
+
+
+def sorted_dictionary(d: dict[Any, Any]) -> dict[Any, Any]:
+    return {k: d[k] for k in sorted(d)}
+
 
 def cprint(s: str, color: str = "cyan", *args, **kwargs):
     """Colored print of string"""
@@ -82,7 +94,7 @@ def memory_report(
     return results
 
 
-"""
+""" Code below is derived from QTT
 
 Copyright 2023 QuTech (TNO, TU Delft)
 
@@ -282,7 +294,13 @@ class measure_time:
 
         return False
 
+    def _repr_pretty_(self, p: Any, cycle: bool) -> None:
+        del cycle
+        s = f"<{self.__class__.__name__} at 0x{id(self):x}: dt {self.delta_time:.3f}>\n"
+        p.text(s)
 
+
+# %%
 def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz") -> tuple[str, Any]:
     """Profile an expression with cProfile and display the results using snakeviz
 
@@ -328,8 +346,8 @@ def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz"
     return statsfile, r
 
 
-def ginput(number_of_points=1, marker : str | None='.', linestyle='', **kwargs) :
-    """ Select points from matplotlib figure
+def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs):
+    """Select points from matplotlib figure
 
     Press middle mouse button to stop selection
 
@@ -340,8 +358,8 @@ def ginput(number_of_points=1, marker : str | None='.', linestyle='', **kwargs) 
     Returns:
         Numpy array with selected points
     """
-    kwargs = {'linestyle': ''} | kwargs 
-    xx = np.ones(( number_of_points, 2)) * np.nan
+    kwargs = {"linestyle": ""} | kwargs
+    xx = np.ones((number_of_points, 2)) * np.nan
     for ii in range(number_of_points):
         x = pylab.ginput(1)
         if len(x) == 0:
@@ -349,15 +367,15 @@ def ginput(number_of_points=1, marker : str | None='.', linestyle='', **kwargs) 
         x = np.asarray(x)
         xx[ii, :] = x.flat
         if marker is not None:
-            plt.plot(xx[:ii+1, 0].T, xx[:ii+1, 1].T, marker=marker, **kwargs)
+            plt.plot(xx[: ii + 1, 0].T, xx[: ii + 1, 1].T, marker=marker, **kwargs)
             plt.draw()
     plt.pause(1e-3)
     return xx
 
-if __name__=='__main__':
-    plt.figure(10); plt.clf()
-    plt.plot([0,1,2,3], [0,3,1,3], '.-')
-    plt.draw()
-    x=ginput(7)
-    
 
+if __name__ == "__main__":
+    plt.figure(10)
+    plt.clf()
+    plt.plot([0, 1, 2, 3], [0, 3, 1, 3], ".-")
+    plt.draw()
+    x = ginput(7)

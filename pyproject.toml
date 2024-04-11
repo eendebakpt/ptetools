@@ -10,6 +10,7 @@ name = "ptetools"
 description="""\
     Python package with various tools. \
 """
+readme = "README.md"
 maintainers = [
     {name = "Pieter Eendebak", email = "pieter.eendebak@gmail.com"},
 ]
@@ -77,15 +78,15 @@ fail_under = 80
 
 [tool.ruff]
 src = ["src"]
-select = ["E", "F", "UP", "I"]
-ignore = [ "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`, ignore for performance
+lint.select = ["E", "F", "UP", "I"]
+lint.ignore = [ "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`, ignore for performance
            "E712" # https://github.com/astral-sh/ruff/issues/4560
         ]
 line-length = 120
 target-version = "py310"
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 
-per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
+lint.per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
 
 
 [tool.mypy]
