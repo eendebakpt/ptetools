@@ -294,7 +294,13 @@ class measure_time:
 
         return False
 
+    def _repr_pretty_(self, p: Any, cycle: bool) -> None:
+        del cycle
+        s = f"<{self.__class__.__name__} at 0x{id(self):x}: dt {self.delta_time:.3f}>\n"
+        p.text(s)
 
+
+# %%
 def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz") -> tuple[str, Any]:
     """Profile an expression with cProfile and display the results using snakeviz
 
