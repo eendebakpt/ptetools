@@ -22,6 +22,10 @@ def counts2fractions(counts: CountsType | Sequence[CountsType]) -> CountsType | 
     if isinstance(counts, Sequence):
         return [counts2fractions(c) for c in counts]
     total = sum(counts.values())
+    if total == 0:
+        # corner case with no selected shots
+        total = 1
+
     return sorted_dictionary({k: v / total for k, v in counts.items()})
 
 
