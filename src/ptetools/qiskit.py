@@ -1,13 +1,11 @@
 from collections.abc import Sequence
-from typing import TypeVar, overload
+from typing import overload
 
 import numpy as np
 
 from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
-
-T = TypeVar("T", CountsType, Sequence[CountsType])
 
 
 @overload
