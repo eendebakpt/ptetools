@@ -42,7 +42,8 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
     >>> _ = plotPoints(points, '.'); _ = plotLabels(points)
     """
 
-    if len(np.array(points).shape) == 1 and points.shape[0] == 2:
+    points = np.asarray(points)
+    if len(points.shape) == 1 and points.shape[0] == 2:
         points = points.reshape((2, 1))
     npoints = points.shape[1]
 
@@ -341,12 +342,14 @@ def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz"
     dt = time.perf_counter() - t0
 
     print(f"profiling: {N} iterations, {dt:.2f} [s]")
-    r = subprocess.Popen([gui, statsfile])
-
+    if gui is not None:
+        r = subprocess.Popen([gui, statsfile])
+    else:
+        r = None
     return statsfile, r
 
 
-def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs):
+def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs):  # pragma: no cover
     """Select points from matplotlib figure
 
     Press middle mouse button to stop selection
@@ -373,7 +376,7 @@ def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs)
     return xx
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     plt.figure(10)
     plt.clf()
     plt.plot([0, 1, 2, 3], [0, 3, 1, 3], ".-")

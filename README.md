@@ -22,3 +22,7 @@ Build new package
 python -m build . --sdist
 twine upload ...
 ````
+Testing
+```
+pytest --cov=ptetools
+```

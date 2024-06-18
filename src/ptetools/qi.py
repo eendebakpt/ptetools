@@ -5,7 +5,7 @@ from quantuminspire.credentials import get_token_authentication, load_account
 from quantuminspire.qiskit import QI
 
 
-def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | None = None) -> Any:
+def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | None = None) -> Any:  # pragma: no cover
     """Connect to QI Starmon backend
 
     Args:
@@ -24,7 +24,7 @@ def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | Non
 
 # %%
 def qi_counts2qiskit(counts: dict[str, int], num_bits: int) -> dict[str, int]:
-    """Convert measurement histogram from qi to qiskit convention"""
+    """Convert measurement histogram from qi 1.0 to qiskit convention"""
     fmt = f"{{:0{num_bits}b}}"
 
     def convert(i):
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
 
 # %%
-def report_qi_status():
+def report_qi_status():  # pragma: no cover
     from quantuminspire.api import QuantumInspireAPI
     from quantuminspire.credentials import get_token_authentication, load_account
     from rich import print as rprint
