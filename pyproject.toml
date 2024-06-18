@@ -38,7 +38,7 @@ dependencies = [
     "lmfit",
     "qiskit",
     "termcolor",
-    "pandas""
+    "pandas",
 ]
 
 [tool.setuptools.dynamic]
