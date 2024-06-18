@@ -37,7 +37,8 @@ dependencies = [
     "PyQt5",
     "lmfit",
     "qiskit",
-    "termcolor"
+    "termcolor",
+    "pandas""
 ]
 
 [tool.setuptools.dynamic]
