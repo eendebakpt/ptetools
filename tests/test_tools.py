@@ -54,9 +54,7 @@ class TestTools(unittest.TestCase):
         assert "<class 'dict'>" in x
 
     def test_profile_expression(self):
-        import time  # noqa
-
-        _ = profile_expression("time.time()", gui=None)
+        _ = profile_expression("import time", gui=None)
 
 
 #    def test_monitorSizes(self):
