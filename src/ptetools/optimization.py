@@ -215,7 +215,7 @@ class OptimizerCallback:
         """
         self._number_of_evaluations = self._number_of_evaluations + 1
         if self.store_data:
-            self.logger.info("data_callback: {iteration} {parameters} {residual}")
+            self.logger.info(f"data_callback: {iteration} {parameters} {residual}")
 
             ts = datetime.datetime.now()  # .isoformat()
             d = (int(iteration), ts, float(residual))
