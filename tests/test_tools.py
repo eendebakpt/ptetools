@@ -3,9 +3,18 @@ import time
 import unittest
 from contextlib import redirect_stdout
 
+import matplotlib.pyplot as plt
 import pytest
 
-from ptetools.tools import cprint, make_blocks, measure_time, sorted_dictionary
+from ptetools.tools import (
+    cprint,
+    make_blocks,
+    measure_time,
+    memory_report,
+    plotLabels,
+    profile_expression,
+    sorted_dictionary,
+)
 
 
 class TestTools(unittest.TestCase):
@@ -34,6 +43,22 @@ class TestTools(unittest.TestCase):
         assert make_blocks(0, 4) == []
         with pytest.raises(ZeroDivisionError):
             make_blocks(0, 0)
+
+    def test_plotLabels(self):
+        plt.figure(1)
+        plotLabels([[0, 1, 4, 5], [2, 3, 2, 3]])
+        plt.close(1)
+
+    def test_memory_report(self):
+        x = memory_report(2, verbose=0)
+        assert "<class 'dict'>" in x
+
+    def test_profile_expression(self):
+        _ = profile_expression("import time", gui=None)
+
+
+#    def test_monitorSizes(self):
+#        monitorSizes()
 
 
 def test_cprint():
