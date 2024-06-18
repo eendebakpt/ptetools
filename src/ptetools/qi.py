@@ -1,8 +1,13 @@
 import datetime
 from typing import Any
 
-from quantuminspire.credentials import get_token_authentication, load_account
-from quantuminspire.qiskit import QI
+try:
+    from quantuminspire.credentials import get_token_authentication, load_account
+    from quantuminspire.qiskit import QI
+except ImportError:
+    import warnings
+
+    warnings.warn("could not import quantuminspire. install it via pip install quanuminspire")
 
 
 def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | None = None) -> Any:  # pragma: no cover
