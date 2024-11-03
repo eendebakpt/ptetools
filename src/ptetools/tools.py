@@ -3,14 +3,12 @@ import tempfile
 import time
 from collections.abc import Callable, Sequence
 from types import TracebackType
-from typing import Any, Literal
+from typing import Any, Literal, Optional, Union
 
 import matplotlib
 import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
-import qtpy
-from termcolor import colored
 
 
 def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
@@ -26,6 +24,8 @@ def sorted_dictionary(d: dict[Any, Any]) -> dict[Any, Any]:
 
 def cprint(s: str, color: str = "cyan", *args, **kwargs):
     """Colored print of string"""
+    from termcolor import colored
+
     print(colored(s, color=color), *args, **kwargs)
 
 
@@ -128,6 +128,8 @@ def monitorSizes(verbose: int = 0) -> list[tuple[int]]:
     Returns:
         List with for each screen a list x, y, width, height
     """
+    import qtpy.QtWidgets  # lazy import
+
     _ = qtpy.QtWidgets.QApplication.instance()  # type: ignore
     _qd = qtpy.QtWidgets.QDesktopWidget()  # type: ignore
 
@@ -179,6 +181,7 @@ def tilefigs(
         monitorindex: index of monitor to use for output
 
     """
+
     if geometry is None:
         geometry = (2, 2)
     mngr = plt.get_current_fig_manager()
@@ -228,7 +231,7 @@ def tilefigs(
         elif be == "agg":
             fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
             fig.canvas.manager.window.resize(w, h)  # type: ignore
-        elif be == "Qt4Agg" or be == "QT4" or be == "QT5Agg" or be == "Qt5Agg":
+        elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg"):
             # assume Qt canvas
             try:
                 fig.canvas.manager.window.move(x, y)  # type: ignore
@@ -382,3 +385,39 @@ if __name__ == "__main__":  # pragma: no cover
     plt.plot([0, 1, 2, 3], [0, 3, 1, 3], ".-")
     plt.draw()
     x = ginput(7)
+
+
+def setWindowRectangle(
+    x: Union[int, Sequence[int]],
+    y: Optional[int] = None,
+    w: Optional[int] = None,
+    h: Optional[int] = None,
+    fig: Optional[int] = None,
+    mngr=None,
+):
+    """Position the current Matplotlib figure at the specified position
+
+    Args:
+        x: position in format (x,y,w,h)
+        y, w, h: y position, width, height
+        fig: specification of figure window. Use None for the current active window
+
+    Usage: setWindowRectangle([x, y, w, h]) or setWindowRectangle(x, y, w, h)
+    """
+    if y is None:
+        x, y, w, h = x  # type: ignore
+    if mngr is None:
+        mngr = plt.get_current_fig_manager()
+    be = matplotlib.get_backend()
+    if be == "WXAgg":
+        mngr.canvas.manager.window.SetPosition((x, y))
+        mngr.canvas.manager.window.SetSize((w, h))
+    elif be == "TkAgg":
+        _ = mngr.canvas.manager.window.wm_geometry("%dx%d+%d+%d" % (w, h, x, y))  # type: ignore
+    elif be == "module://IPython.kernel.zmq.pylab.backend_inline":
+        pass
+    else:
+        # assume Qt canvas
+        mngr.canvas.manager.window.move(x, y)
+        mngr.canvas.manager.window.resize(w, h)
+        mngr.canvas.manager.window.setGeometry(x, y, w, h)
