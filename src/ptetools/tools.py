@@ -3,7 +3,7 @@ import tempfile
 import time
 from collections.abc import Callable, Sequence
 from types import TracebackType
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import matplotlib
 import matplotlib.pylab as pylab
@@ -388,11 +388,11 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 def setWindowRectangle(
-    x: Union[int, Sequence[int]],
-    y: Optional[int] = None,
-    w: Optional[int] = None,
-    h: Optional[int] = None,
-    fig: Optional[int] = None,
+    x: int | Sequence[int],
+    y: int | None = None,
+    w: int | None = None,
+    h: int | None = None,
+    fig: int | None = None,
     mngr=None,
 ):
     """Position the current Matplotlib figure at the specified position

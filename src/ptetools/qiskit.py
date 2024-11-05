@@ -1,24 +1,32 @@
 from collections.abc import Sequence
-from typing import overload
+from typing import Any, overload
 
 import numpy as np
+import qiskit
+import qiskit.result
+from qiskit.circuit import Delay
+from qiskit.circuit.quantumcircuit import QuantumCircuit
+from qiskit.dagcircuit import DAGCircuit
+from qiskit.transpiler.basepasses import TransformationPass
 
 from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
+FractionsType = dict[str, float]
 
 
 @overload
-def counts2fractions(counts: Sequence[CountsType]) -> list[CountsType]:
+def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]:
     ...
 
 
 @overload
-def counts2fractions(counts: CountsType) -> CountsType:
+def counts2fractions(counts: CountsType) -> FractionsType:
     ...
 
 
-def counts2fractions(counts: CountsType | Sequence[CountsType]) -> CountsType | list[CountsType]:
+def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
+    """Convert list of counts to list of fractions"""
     if isinstance(counts, Sequence):
         return [counts2fractions(c) for c in counts]
     total = sum(counts.values())
@@ -57,18 +65,7 @@ if __name__ == "__main__":
 # %%
 
 
-from typing import Any
-
-import numpy as np
-import qiskit
-import qiskit.result
-from qiskit.circuit import Delay
-from qiskit.circuit.quantumcircuit import QuantumCircuit
-from qiskit.dagcircuit import DAGCircuit
-from qiskit.transpiler.basepasses import TransformationPass
-
-
-class RemoveDelayGate(TransformationPass):  # type: ignore
+class RemoveZeroDelayGate(TransformationPass):  # type: ignore
     """Return a circuit with all zero duration delay gates removed.
 
     This transformation is not semantics preserving.
@@ -100,7 +97,6 @@ class RemoveDelayGate(TransformationPass):  # type: ignore
 
 
 if __name__ == "__main__":
-    from qiskit import QuantumCircuit
     from qiskit.transpiler import PassManager
 
     qc = QuantumCircuit(2)
@@ -109,7 +105,7 @@ if __name__ == "__main__":
     qc.delay(0, 1)
     qc.draw()
 
-    passes = [RemoveDelayGate()]
+    passes = [RemoveZeroDelayGate()]
     pm = PassManager(passes)
     r = pm.run([qc])
     print(r[0].draw())
