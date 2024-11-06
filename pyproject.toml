@@ -35,8 +35,9 @@ dependencies = [
     "rich",
     "qtpy",
     "PyQt5",
+    "qutip",
     "lmfit",
-    "qiskit",
+    "qiskit>=1.2",
     "termcolor",
     "pandas",
 ]

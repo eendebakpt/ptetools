@@ -1,24 +1,32 @@
 from collections.abc import Sequence
-from typing import overload
+from typing import Any, overload
 
 import numpy as np
+import qiskit
+import qiskit.result
+from qiskit.circuit import Delay
+from qiskit.circuit.quantumcircuit import QuantumCircuit
+from qiskit.dagcircuit import DAGCircuit
+from qiskit.transpiler.basepasses import TransformationPass
 
 from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
+FractionsType = dict[str, float]
 
 
 @overload
-def counts2fractions(counts: Sequence[CountsType]) -> list[CountsType]:
+def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]:
     ...
 
 
 @overload
-def counts2fractions(counts: CountsType) -> CountsType:
+def counts2fractions(counts: CountsType) -> FractionsType:
     ...
 
 
-def counts2fractions(counts: CountsType | Sequence[CountsType]) -> CountsType | list[CountsType]:
+def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
+    """Convert list of counts to list of fractions"""
     if isinstance(counts, Sequence):
         return [counts2fractions(c) for c in counts]
     total = sum(counts.values())
@@ -41,12 +49,10 @@ def counts2dense(c: CountsType, number_of_bits: int) -> np.ndarray:
 def dense2sparse(d: np.ndarray) -> CountsType:
     """Convert dictionary with fractions or counts to a dense array"""
     d = np.asanyarray(d)
-    counts = {}
     number_of_bits = int(np.log2(d.size))
     fmt = f"{{:0{number_of_bits}b}}"
     bb = [fmt.format(idx) for idx in range(2**number_of_bits)]
-    for idx, bitstring in enumerate(bb):
-        counts[bitstring] = d[idx]
+    counts = {bitstring: d[idx].item() for idx, bitstring in enumerate(bb)}
     return counts
 
 
@@ -55,3 +61,76 @@ if __name__ == "__main__":
     print(counts2fractions({"11": 20, "00": 30}))
     print(counts2fractions([{"11": 20, "00": 30}]))
     print(dense2sparse([2, 0, 4, 2]))
+
+# %%
+
+
+class RemoveGateByName(TransformationPass):  # type: ignore
+    """Return a circuit with all gates with specified name removed.
+
+    This transformation is not semantics preserving.
+    """
+
+    def __init__(self, gate_name: str, *args: Any, **kwargs: Any):
+        """Remove all gates with specified name from a DAG
+
+        Args:
+            gate_name: Name of the gate to be removed from a DAG
+        """
+        super().__init__(*args, **kwargs)
+        self._gate_name = gate_name
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the RemoveGateByName pass on `dag`."""
+
+        dag.remove_all_ops_named(self._gate_name)
+
+        return dag
+
+    def __repr__(self) -> str:
+        name = self.__class__.__module__ + "." + self.__class__.__name__
+        return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
+
+
+class RemoveZeroDelayGate(TransformationPass):  # type: ignore
+    """Return a circuit with all zero duration delay gates removed.
+
+    This transformation is not semantics preserving.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        """Remove all zero duration delay gates from a DAG
+
+        Args:
+            gate_name: Name of the gate to be removed from a DAG
+        """
+        self._empty_dag1 = qiskit.converters.circuit_to_dag(QuantumCircuit(1))
+        super().__init__(*args, **kwargs)
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the RemoveZeroDelayGate pass on `dag`."""
+
+        for node in dag.op_nodes():
+            if isinstance(node.op, Delay):
+                if node.op.params[0] == 0:
+                    dag.substitute_node_with_dag(node, self._empty_dag1)
+        return dag
+
+    def __repr__(self) -> str:
+        name = self.__class__.__module__ + "." + self.__class__.__name__
+        return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
+
+
+if __name__ == "__main__":
+    from qiskit.transpiler import PassManager
+
+    qc = QuantumCircuit(2)
+    qc.delay(0, 0)
+    qc.barrier()
+    qc.delay(0, 1)
+    qc.draw()
+
+    passes = [RemoveZeroDelayGate()]
+    pm = PassManager(passes)
+    r = pm.run([qc])
+    print(r[0].draw())

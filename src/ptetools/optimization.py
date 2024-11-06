@@ -241,7 +241,7 @@ class OptimizerCallback:
     def scipy_callback(self, parameters):
         """Callback method for scipy optimizers"""
         number_evaluations = self.number_of_evaluations()
-        value = np.NaN
+        value = np.nan
         if self.show_progress:
             print(f"#{number_evaluations}, {parameters}")
         self.data_callback(number_evaluations, parameters, value)
