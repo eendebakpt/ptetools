@@ -65,6 +65,33 @@ if __name__ == "__main__":
 # %%
 
 
+class RemoveGateByName(TransformationPass):  # type: ignore
+    """Return a circuit with all gates with specified name removed.
+
+    This transformation is not semantics preserving.
+    """
+
+    def __init__(self, gate_name: str, *args: Any, **kwargs: Any):
+        """Remove all gates with specified name from a DAG
+
+        Args:
+            gate_name: Name of the gate to be removed from a DAG
+        """
+        super().__init__(*args, **kwargs)
+        self._gate_name = gate_name
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the RemoveGateByName pass on `dag`."""
+
+        dag.remove_all_ops_named(self._gate_name)
+
+        return dag
+
+    def __repr__(self) -> str:
+        name = self.__class__.__module__ + "." + self.__class__.__name__
+        return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
+
+
 class RemoveZeroDelayGate(TransformationPass):  # type: ignore
     """Return a circuit with all zero duration delay gates removed.
 
@@ -81,9 +108,7 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
         super().__init__(*args, **kwargs)
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
-        """Run the RemoveGateByName pass on `dag`."""
-
-        dag.remove_all_ops_named("delay")
+        """Run the RemoveZeroDelayGate pass on `dag`."""
 
         for node in dag.op_nodes():
             if isinstance(node.op, Delay):
