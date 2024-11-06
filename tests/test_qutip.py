@@ -6,7 +6,7 @@ import qutip as qt
 from ptetools.qutip import basis2qutip, pauli_string_to_operator
 
 
-class TestQiskit(unittest.TestCase):
+class TestQutip(unittest.TestCase):
     def test_pauli_string_to_operator(self):
         assert pauli_string_to_operator("I") == qt.qeye(2)
         assert pauli_string_to_operator("XY") == qt.sigmax() & qt.sigmay()

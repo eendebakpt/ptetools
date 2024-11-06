@@ -18,8 +18,9 @@ def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
     return blocks
 
 
-def sorted_dictionary(d: dict[Any, Any]) -> dict[Any, Any]:
-    return {k: d[k] for k in sorted(d)}
+def sorted_dictionary(d: dict[Any, Any], *, key: Callable = None) -> dict[Any, Any]:
+    """Sort keys of a dictionary"""
+    return {k: d[k] for k in sorted(d, key=key)}
 
 
 def cprint(s: str, color: str = "cyan", *args, **kwargs):
