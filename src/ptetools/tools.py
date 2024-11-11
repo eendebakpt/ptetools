@@ -2,6 +2,7 @@ import os
 import tempfile
 import time
 from collections.abc import Callable, Sequence
+from itertools import chain
 from types import TracebackType
 from typing import Any, Literal
 
@@ -9,6 +10,22 @@ import matplotlib
 import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+def flatten(lst: Sequence[Any]) -> list[Any]:
+    """Flatten a sequence.
+
+    Args:
+        lst : Sequence to be flattened.
+
+    Returns:
+        list: flattened list.
+
+    Example:
+        >>> flatten([ [1,2], [3,4], [10] ])
+        [1, 2, 3, 4, 10]
+    """
+    return list(chain(*lst))
 
 
 def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
@@ -168,6 +185,8 @@ def tilefigs(
     tofront: bool = False,
     verbose: int = 0,
     monitorindex: int | None = None,
+    y_offset: int = 20,
+    window: tuple[int] | None = None,
 ) -> None:
     """Tile figure windows on a specified area
 
@@ -180,7 +199,7 @@ def tilefigs(
         tofront: When True, activate the figure
         verbose: Verbosity level
         monitorindex: index of monitor to use for output
-
+        y_offset: Offset for window tile bars
     """
 
     if geometry is None:
@@ -192,6 +211,9 @@ def tilefigs(
 
     if ww is None:
         ww = monitorSizes()[monitorindex]
+
+    if window is not None:
+        ww = window
 
     w = ww[2] / geometry[0]  # type: ignore
     h = ww[3] / geometry[1]  # type: ignore
@@ -235,9 +257,9 @@ def tilefigs(
         elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg"):
             # assume Qt canvas
             try:
-                fig.canvas.manager.window.move(x, y)  # type: ignore
-                fig.canvas.manager.window.resize(int(w), int(h))  # type: ignore
-                fig.canvas.manager.window.setGeometry(x, y, int(w), int(h))  # type: ignore
+                # fig.canvas.manager.window.move(x, y+y_offset)  # type: ignore
+                # fig.canvas.manager.window.resize(int(w), int(h))  # type: ignore
+                fig.canvas.manager.window.setGeometry(x, y + y_offset, int(w), int(h))  # type: ignore
             except Exception as e:
                 print(
                     "problem with window manager: ",
