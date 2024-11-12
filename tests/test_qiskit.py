@@ -3,7 +3,14 @@ import unittest
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 
-from ptetools.qiskit import RemoveGateByName, RemoveZeroDelayGate, counts2dense, counts2fractions
+from ptetools.qiskit import (
+    RemoveGateByName,
+    RemoveZeroDelayGate,
+    counts2dense,
+    counts2fractions,
+    fractions2counts,
+    largest_remainder_rounding,
+)
 
 
 def circuit_instruction_names(qc):
@@ -43,6 +50,15 @@ class TestQiskit(unittest.TestCase):
         self.assertEqual(
             circuit_instruction_names(qc_transpiled), ["barrier", "delay", "barrier", "delay", "delay", "delay"]
         )
+
+    def test_fractions2counts(self):
+        number_set = np.array([20.2, 20.2, 20.2, 20.2, 19.2]) / 100
+        r = largest_remainder_rounding(number_set, 100)
+        np.testing.assert_array_equal(r, [21, 20, 20, 20, 19])
+
+        fractions = dict(zip(range(3), [10.1, 80.4, 9.6]))
+        assert fractions2counts(fractions, 100) == {0: 10, 1: 80, 2: 10}
+        assert fractions2counts(fractions, 1024) == {0: 103, 1: 823, 2: 98}
 
 
 if __name__ == "__main__":

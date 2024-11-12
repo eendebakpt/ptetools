@@ -13,6 +13,8 @@ from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
+IntArray = np.typing.NDArray[int]
+FloatArray = np.typing.NDArray[np.float64]
 
 
 @overload
@@ -23,6 +25,51 @@ def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]:
 @overload
 def counts2fractions(counts: CountsType) -> FractionsType:
     ...
+
+
+def largest_remainder_rounding(fractions: FloatArray, total: int) -> IntArray:
+    """Largest remainder rounding algorithm
+
+        This function take a list of fractions and rounds to integers such that the sum adds
+        up to total and the ratios are preserved.
+
+        Notice: the algorithm we are using here is 'Largest Remainder'
+
+    Code derived from https://stackoverflow.com/q/25271388
+    """
+    fractions = np.asarray(fractions)
+    unround_numbers = (fractions / fractions.sum()) * total
+    decimal_part_with_index = sorted(
+        [(index, unround_numbers[index] % 1) for index in range(len(unround_numbers))], key=lambda y: y[1], reverse=True
+    )
+    remainder = total - sum(unround_numbers.astype(int))
+    index = 0
+    while remainder > 0:
+        unround_numbers[decimal_part_with_index[index][0]] += 1
+        remainder -= 1
+        index = (index + 1) % fractions.size
+    return [int(x) for x in unround_numbers]
+
+
+def fractions2counts(f: list[CountsType] | CountsType, number_of_shots: int) -> list[CountsType] | CountsType:
+    def f2c(x, number_of_shots: int):
+        counts = largest_remainder_rounding(np.fromiter(x.values(), float), number_of_shots)
+        return dict(zip(x.keys(), counts))
+
+    if isinstance(f, dict):
+        return f2c(f, number_of_shots)
+    return [f2c(x, number_of_shots) for x in f]
+
+
+if __name__ == "__main__":
+    number_set = np.array([20.2, 20.2, 20.2, 20.2, 19.2]) / 100
+    r = largest_remainder_rounding(number_set, 100)
+    np.testing.assert_array_equal(r, [21, 20, 20, 20, 19])
+    print(r, sum(r))
+
+    fractions = dict(zip(range(3), [10.1, 80.4, 9.6]))
+    assert fractions2counts(fractions, 100) == {0: 10, 1: 80, 2: 10}
+    assert fractions2counts(fractions, 1024) == {0: 103, 1: 823, 2: 98}
 
 
 def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
