@@ -3,6 +3,7 @@ from typing import Any, overload
 
 import numpy as np
 import qiskit
+import qiskit.quantum_info as qi
 import qiskit.result
 from qiskit.circuit import Delay
 from qiskit.circuit.quantumcircuit import QuantumCircuit
@@ -15,6 +16,7 @@ CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
 IntArray = np.typing.NDArray[int]
 FloatArray = np.typing.NDArray[np.float64]
+ComplexArray = np.typing.NDArray[np.complex128]
 
 
 @overload
@@ -108,6 +110,12 @@ if __name__ == "__main__":
     print(counts2fractions({"11": 20, "00": 30}))
     print(counts2fractions([{"11": 20, "00": 30}]))
     print(dense2sparse([2, 0, 4, 2]))
+
+
+def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
+    op = qi.Operator(circuit)
+    return op.data
+
 
 # %%
 

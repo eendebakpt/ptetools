@@ -6,6 +6,7 @@ from qiskit.circuit import QuantumCircuit
 from ptetools.qiskit import (
     RemoveGateByName,
     RemoveZeroDelayGate,
+    circuit2matrix,
     counts2dense,
     counts2fractions,
     fractions2counts,
@@ -59,6 +60,17 @@ class TestQiskit(unittest.TestCase):
         fractions = dict(zip(range(3), [10.1, 80.4, 9.6]))
         assert fractions2counts(fractions, 100) == {0: 10, 1: 80, 2: 10}
         assert fractions2counts(fractions, 1024) == {0: 103, 1: 823, 2: 98}
+
+    def test_circuit2matrix(self):
+        for k in range(1, 4):
+            x = circuit2matrix(QuantumCircuit(k))
+            np.testing.assert_array_equal(x, np.eye(2**k, dtype=complex))
+
+        c = QuantumCircuit(1)
+        c.x(0)
+        x = circuit2matrix(c)
+        expected = np.array([[0.0 + 0.0j, 1.0 + 0.0j], [1.0 + 0.0j, 0.0 + 0.0j]])
+        np.testing.assert_array_equal(x, expected)
 
 
 if __name__ == "__main__":
