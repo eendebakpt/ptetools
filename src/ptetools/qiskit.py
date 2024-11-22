@@ -1,3 +1,4 @@
+import random
 from collections.abc import Sequence
 from typing import Any, overload
 
@@ -9,6 +10,7 @@ from qiskit.circuit import Delay
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
+from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
 
 from ptetools.tools import sorted_dictionary
 
@@ -115,6 +117,22 @@ if __name__ == "__main__":
 def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
     op = qi.Operator(circuit)
     return op.data
+
+
+def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]:
+    """Generate a circuit with a single random Clifford gate"""
+    state = qiskit.QuantumCircuit(number_of_qubits, 0)  #
+    if number_of_qubits == 2:
+        cl_index = random.randrange(11520)
+        cl = CliffordUtils.clifford_2_qubit_circuit(cl_index)
+        state = state.compose(cl, (0, 1))
+    elif number_of_qubits == 1:
+        cl_index = random.randrange(24)
+        cl = CliffordUtils.clifford_1_qubit_circuit(cl_index)
+        state = state.compose(cl, (0,))
+    else:
+        raise NotImplementedError(f"number_of_qubits {number_of_qubits}")
+    return state, cl_index
 
 
 # %%

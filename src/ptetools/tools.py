@@ -12,6 +12,65 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def array2latex(
+    X,
+    header: bool = True,
+    hlines=(),
+    floatfmt: str = "%g",
+    comment: str | None = None,
+    hlinespace: None | float = None,
+    mode: Literal["tabular", "psmallmatrix", "pmatrix"] = "tabular",
+    tabchar: str = "c",
+) -> str:
+    """Convert numpy array to Latex tabular or matrix"""
+    ss = ""
+    if comment is not None:
+        if isinstance(comment, list):
+            for line in comment:
+                ss += "%% %s\n" % str(line)
+        else:
+            ss += "%% %s\n" % str(comment)
+    if header:
+        match mode:
+            case "tabular":
+                if len(tabchar) == 1:
+                    cc = tabchar * X.shape[1]
+                else:
+                    cc = tabchar + tabchar[-1] * (X.shape[1] - len(tabchar))
+                ss += "\\begin{tabular}{%s}" % cc + chr(10)
+            case "psmallmatrix":
+                ss += "\\begin{psmallmatrix}" + chr(10)
+            case "pmatrix":
+                ss += "\\begin{pmatrix}" + chr(10)
+            case _:
+                raise ValueError(f"mode {mode} is invalid")
+    for ii in range(X.shape[0]):
+        r = X[ii, :]
+        if isinstance(r[0], str):
+            ss += " & ".join(["%s" % x for x in r])
+        else:
+            ss += " & ".join([floatfmt % x for x in r])
+        if ii < (X.shape[0]) - 1 or not header:
+            ss += "  \\\\" + chr(10)
+        else:
+            ss += "  " + chr(10)
+        if ii in hlines:
+            ss += r"\hline" + chr(10)
+            if hlinespace is not None:
+                ss += "\\rule[+%.2fex]{0pt}{0pt}" % hlinespace
+    if header:
+        match mode:
+            case "tabular":
+                ss += "\\end{tabular}"
+            case "psmallmatrix":
+                ss += "\\end{psmallmatrix}" + chr(10)
+            case "pmatrix":
+                ss += "\\end{pmatrix}" + chr(10)
+            case _:
+                raise ValueError(f"mode {mode} is invalid")
+    return ss
+
+
 def flatten(lst: Sequence[Any]) -> list[Any]:
     """Flatten a sequence.
 

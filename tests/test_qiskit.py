@@ -11,6 +11,7 @@ from ptetools.qiskit import (
     counts2fractions,
     fractions2counts,
     largest_remainder_rounding,
+    random_clifford_circuit,
 )
 
 
@@ -26,6 +27,12 @@ class TestQiskit(unittest.TestCase):
     def test_counts2fractions(self):
         assert counts2fractions({"1": 0}) == {"1": 0.0}
         assert counts2fractions({"1": 100, "0": 50}) == {"0": 0.3333333333333333, "1": 0.6666666666666666}
+
+    def test_random_clifford_circuit(self):
+        c, index = random_clifford_circuit(1)
+        assert c.num_qubits == 1
+        c, index = random_clifford_circuit(2)
+        assert c.num_qubits == 2
 
     def test_RemoveGateByName(self):
         qc = QuantumCircuit(3)
