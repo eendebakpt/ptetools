@@ -1,18 +1,24 @@
+import random
 from collections.abc import Sequence
 from typing import Any, overload
 
 import numpy as np
 import qiskit
+import qiskit.quantum_info as qi
 import qiskit.result
 from qiskit.circuit import Delay
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
+from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
 
 from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
+IntArray = np.typing.NDArray[int]
+FloatArray = np.typing.NDArray[np.float64]
+ComplexArray = np.typing.NDArray[np.complex128]
 
 
 @overload
@@ -23,6 +29,51 @@ def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]:
 @overload
 def counts2fractions(counts: CountsType) -> FractionsType:
     ...
+
+
+def largest_remainder_rounding(fractions: FloatArray, total: int) -> IntArray:
+    """Largest remainder rounding algorithm
+
+        This function take a list of fractions and rounds to integers such that the sum adds
+        up to total and the ratios are preserved.
+
+        Notice: the algorithm we are using here is 'Largest Remainder'
+
+    Code derived from https://stackoverflow.com/q/25271388
+    """
+    fractions = np.asarray(fractions)
+    unround_numbers = (fractions / fractions.sum()) * total
+    decimal_part_with_index = sorted(
+        [(index, unround_numbers[index] % 1) for index in range(len(unround_numbers))], key=lambda y: y[1], reverse=True
+    )
+    remainder = total - sum(unround_numbers.astype(int))
+    index = 0
+    while remainder > 0:
+        unround_numbers[decimal_part_with_index[index][0]] += 1
+        remainder -= 1
+        index = (index + 1) % fractions.size
+    return [int(x) for x in unround_numbers]
+
+
+def fractions2counts(f: list[CountsType] | CountsType, number_of_shots: int) -> list[CountsType] | CountsType:
+    def f2c(x, number_of_shots: int):
+        counts = largest_remainder_rounding(np.fromiter(x.values(), float), number_of_shots)
+        return dict(zip(x.keys(), counts))
+
+    if isinstance(f, dict):
+        return f2c(f, number_of_shots)
+    return [f2c(x, number_of_shots) for x in f]
+
+
+if __name__ == "__main__":
+    number_set = np.array([20.2, 20.2, 20.2, 20.2, 19.2]) / 100
+    r = largest_remainder_rounding(number_set, 100)
+    np.testing.assert_array_equal(r, [21, 20, 20, 20, 19])
+    print(r, sum(r))
+
+    fractions = dict(zip(range(3), [10.1, 80.4, 9.6]))
+    assert fractions2counts(fractions, 100) == {0: 10, 1: 80, 2: 10}
+    assert fractions2counts(fractions, 1024) == {0: 103, 1: 823, 2: 98}
 
 
 def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
@@ -61,6 +112,28 @@ if __name__ == "__main__":
     print(counts2fractions({"11": 20, "00": 30}))
     print(counts2fractions([{"11": 20, "00": 30}]))
     print(dense2sparse([2, 0, 4, 2]))
+
+
+def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
+    op = qi.Operator(circuit)
+    return op.data
+
+
+def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]:
+    """Generate a circuit with a single random Clifford gate"""
+    state = qiskit.QuantumCircuit(number_of_qubits, 0)  #
+    if number_of_qubits == 2:
+        cl_index = random.randrange(11520)
+        cl = CliffordUtils.clifford_2_qubit_circuit(cl_index)
+        state = state.compose(cl, (0, 1))
+    elif number_of_qubits == 1:
+        cl_index = random.randrange(24)
+        cl = CliffordUtils.clifford_1_qubit_circuit(cl_index)
+        state = state.compose(cl, (0,))
+    else:
+        raise NotImplementedError(f"number_of_qubits {number_of_qubits}")
+    return state, cl_index
+
 
 # %%
 

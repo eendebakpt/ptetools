@@ -2,6 +2,7 @@ import os
 import tempfile
 import time
 from collections.abc import Callable, Sequence
+from itertools import chain
 from types import TracebackType
 from typing import Any, Literal
 
@@ -9,6 +10,81 @@ import matplotlib
 import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+def array2latex(
+    X,
+    header: bool = True,
+    hlines=(),
+    floatfmt: str = "%g",
+    comment: str | None = None,
+    hlinespace: None | float = None,
+    mode: Literal["tabular", "psmallmatrix", "pmatrix"] = "tabular",
+    tabchar: str = "c",
+) -> str:
+    """Convert numpy array to Latex tabular or matrix"""
+    ss = ""
+    if comment is not None:
+        if isinstance(comment, list):
+            for line in comment:
+                ss += "%% %s\n" % str(line)
+        else:
+            ss += "%% %s\n" % str(comment)
+    if header:
+        match mode:
+            case "tabular":
+                if len(tabchar) == 1:
+                    cc = tabchar * X.shape[1]
+                else:
+                    cc = tabchar + tabchar[-1] * (X.shape[1] - len(tabchar))
+                ss += "\\begin{tabular}{%s}" % cc + chr(10)
+            case "psmallmatrix":
+                ss += "\\begin{psmallmatrix}" + chr(10)
+            case "pmatrix":
+                ss += "\\begin{pmatrix}" + chr(10)
+            case _:
+                raise ValueError(f"mode {mode} is invalid")
+    for ii in range(X.shape[0]):
+        r = X[ii, :]
+        if isinstance(r[0], str):
+            ss += " & ".join(["%s" % x for x in r])
+        else:
+            ss += " & ".join([floatfmt % x for x in r])
+        if ii < (X.shape[0]) - 1 or not header:
+            ss += "  \\\\" + chr(10)
+        else:
+            ss += "  " + chr(10)
+        if ii in hlines:
+            ss += r"\hline" + chr(10)
+            if hlinespace is not None:
+                ss += "\\rule[+%.2fex]{0pt}{0pt}" % hlinespace
+    if header:
+        match mode:
+            case "tabular":
+                ss += "\\end{tabular}"
+            case "psmallmatrix":
+                ss += "\\end{psmallmatrix}" + chr(10)
+            case "pmatrix":
+                ss += "\\end{pmatrix}" + chr(10)
+            case _:
+                raise ValueError(f"mode {mode} is invalid")
+    return ss
+
+
+def flatten(lst: Sequence[Any]) -> list[Any]:
+    """Flatten a sequence.
+
+    Args:
+        lst : Sequence to be flattened.
+
+    Returns:
+        list: flattened list.
+
+    Example:
+        >>> flatten([ [1,2], [3,4], [10] ])
+        [1, 2, 3, 4, 10]
+    """
+    return list(chain(*lst))
 
 
 def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
@@ -168,6 +244,8 @@ def tilefigs(
     tofront: bool = False,
     verbose: int = 0,
     monitorindex: int | None = None,
+    y_offset: int = 20,
+    window: tuple[int] | None = None,
 ) -> None:
     """Tile figure windows on a specified area
 
@@ -180,7 +258,7 @@ def tilefigs(
         tofront: When True, activate the figure
         verbose: Verbosity level
         monitorindex: index of monitor to use for output
-
+        y_offset: Offset for window tile bars
     """
 
     if geometry is None:
@@ -192,6 +270,9 @@ def tilefigs(
 
     if ww is None:
         ww = monitorSizes()[monitorindex]
+
+    if window is not None:
+        ww = window
 
     w = ww[2] / geometry[0]  # type: ignore
     h = ww[3] / geometry[1]  # type: ignore
@@ -235,9 +316,9 @@ def tilefigs(
         elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg"):
             # assume Qt canvas
             try:
-                fig.canvas.manager.window.move(x, y)  # type: ignore
-                fig.canvas.manager.window.resize(int(w), int(h))  # type: ignore
-                fig.canvas.manager.window.setGeometry(x, y, int(w), int(h))  # type: ignore
+                # fig.canvas.manager.window.move(x, y+y_offset)  # type: ignore
+                # fig.canvas.manager.window.resize(int(w), int(h))  # type: ignore
+                fig.canvas.manager.window.setGeometry(x, y + y_offset, int(w), int(h))  # type: ignore
             except Exception as e:
                 print(
                     "problem with window manager: ",

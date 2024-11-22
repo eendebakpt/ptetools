@@ -38,6 +38,7 @@ dependencies = [
     "qutip",
     "lmfit",
     "qiskit>=1.2",
+    "qiskit-experiments",
     "termcolor",
     "pandas",
 ]
