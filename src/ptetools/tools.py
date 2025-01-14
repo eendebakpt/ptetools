@@ -12,6 +12,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def fmt_dict(d: dict[Any, Any], fmt: str = "{:.2f}", *, key_fmt: str = "{}", add_braces: bool = True) -> str:
+    """Format dictionary keys and values"""
+    body = ", ".join([f"{key_fmt.format(k)}: {fmt.format(v)}" for k, v in d.items()])
+    if add_braces:
+        return "{" + body + "}"
+    else:
+        return body
+
+
 def array2latex(
     X,
     header: bool = True,

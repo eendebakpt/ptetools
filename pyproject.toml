@@ -28,7 +28,7 @@ classifiers = [
 keywords = [
 ]
 dynamic = ["version"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "numpy",
     "matplotlib",
