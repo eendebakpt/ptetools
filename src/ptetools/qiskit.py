@@ -1,11 +1,15 @@
+import pathlib
 import random
+import tempfile
 from collections.abc import Sequence
 from typing import Any, overload
 
+import matplotlib.pyplot as plt
 import numpy as np
 import qiskit
 import qiskit.quantum_info as qi
 import qiskit.result
+import qiskit_experiments.framework.containers.figure_data
 from qiskit.circuit import Delay
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.dagcircuit import DAGCircuit
@@ -207,3 +211,19 @@ if __name__ == "__main__":
     pm = PassManager(passes)
     r = pm.run([qc])
     print(r[0].draw())
+
+
+def qiskit_experiments_to_figure(
+    figure_data: qiskit_experiments.framework.containers.figure_data.FigureData,
+    fig: int,
+):
+    """Convert qiskit experiment result to matplotlib figure window"""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file_path = pathlib.Path(temp_dir, "fig.png")
+
+        figure_data.figure.savefig(temp_file_path)
+        im = plt.imread(temp_file_path)
+        plt.figure(fig)
+        plt.clf()
+        plt.imshow(im)
+        plt.axis("off")
