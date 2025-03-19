@@ -2,7 +2,8 @@ import itertools
 from collections.abc import Callable, Sequence
 
 from joblib import Parallel, delayed
-from tqdm import tqdm
+
+from ptetools.tools import tqdm
 
 
 def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
@@ -25,7 +26,7 @@ def parallel_execute(
     data = tuple(data)
     number_of_datapoints = len(data)
     if block_size is None:
-        block_size = number_of_datapoints // 5
+        block_size = max(number_of_datapoints // 5, 1)
     blocks = make_blocks(number_of_datapoints, block_size)
 
     def execution_method(block, **kwargs):
