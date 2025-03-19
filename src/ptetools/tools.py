@@ -12,6 +12,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def is_spyder_environment() -> bool:
+    """Return True if the process is running in a Spyder environment"""
+    return "SPY_TESTING" in os.environ
+
+
+if is_spyder_environment():
+    pass
+else:
+    pass
+
+
 def fmt_dict(d: dict[Any, Any], fmt: str = "{:.2f}", *, key_fmt: str = "{}", add_braces: bool = True) -> str:
     """Format dictionary keys and values"""
     body = ", ".join([f"{key_fmt.format(k)}: {fmt.format(v)}" for k, v in d.items()])
@@ -322,7 +333,7 @@ def tilefigs(
         elif be == "agg":
             fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
             fig.canvas.manager.window.resize(w, h)  # type: ignore
-        elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg"):
+        elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg", "qtagg"):
             # assume Qt canvas
             try:
                 # fig.canvas.manager.window.move(x, y+y_offset)  # type: ignore

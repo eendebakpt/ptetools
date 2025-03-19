@@ -1,7 +1,9 @@
+import logging
 import pathlib
 import random
 import tempfile
 from collections.abc import Sequence
+from functools import lru_cache
 from typing import Any, overload
 
 import matplotlib.pyplot as plt
@@ -227,3 +229,52 @@ def qiskit_experiments_to_figure(
         plt.clf()
         plt.imshow(im)
         plt.axis("off")
+
+
+@lru_cache
+def delay_gate(duration: float, dt: float, round_dt: bool) -> float:
+    n = duration / dt
+    if round_dt:
+        n = round(n)
+
+    return Delay(n, unit="dt")
+
+
+class ModifyDelayGate(TransformationPass):  # type: ignore
+    """Return a circuit with small rotation gates removed."""
+
+    def __init__(self, dt: float = 20e-9, round: bool = True) -> None:
+        """Change delay gates to specified time step
+
+        Args:
+            epsilon: Threshold for rotation angle to be removed
+            modulo2pi: If True, then rotations multiples of 2pi are removed as well
+        """
+        super().__init__()
+
+        self.round = round
+        self.dt = dt
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the pass on `dag`.
+        Args:
+            dag: input dag.
+        Returns:
+            Output dag with Delay gates modified
+        """
+        for node in dag.op_nodes():
+            if isinstance(node.op, Delay):
+                params = node.op.params
+                if node.op.unit == "s":
+                    logging.info(f"{self.__class__.__name__}: found node with params {params}")
+                    op = delay_gate(params[0], self.dt, self.round)
+                    dag.substitute_node(node, op, inplace=True)
+        return dag
+
+
+if __name__ == "__main__":
+    qc = QuantumCircuit(1)
+    qc.delay(duration=123e-9, unit="s")
+    p = ModifyDelayGate(dt=20e-9, round=True)
+    qc = p(qc)
+    print(qc.draw())
