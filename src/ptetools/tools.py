@@ -322,7 +322,7 @@ def tilefigs(
         elif be == "agg":
             fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
             fig.canvas.manager.window.resize(w, h)  # type: ignore
-        elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg"):
+        elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg", "qtagg"):
             # assume Qt canvas
             try:
                 # fig.canvas.manager.window.move(x, y+y_offset)  # type: ignore
