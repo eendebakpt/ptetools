@@ -1,8 +1,9 @@
+import math
 import os
 import tempfile
 import time
 from collections.abc import Callable, Sequence
-from itertools import chain
+from itertools import chain, repeat
 from types import TracebackType
 from typing import Any, Literal
 
@@ -10,6 +11,7 @@ import matplotlib
 import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
+import rich
 
 
 def is_spyder_environment() -> bool:
@@ -47,9 +49,9 @@ def array2latex(
     if comment is not None:
         if isinstance(comment, list):
             for line in comment:
-                ss += "%% %s\n" % str(line)
+                ss += f"% {str(line)}\n"
         else:
-            ss += "%% %s\n" % str(comment)
+            ss += f"% {str(comment)}\n"
     if header:
         match mode:
             case "tabular":
@@ -57,7 +59,7 @@ def array2latex(
                     cc = tabchar * X.shape[1]
                 else:
                     cc = tabchar + tabchar[-1] * (X.shape[1] - len(tabchar))
-                ss += "\\begin{tabular}{%s}" % cc + chr(10)
+                ss += f"\\begin{{tabular}}{{{cc}}}" + chr(10)
             case "psmallmatrix":
                 ss += "\\begin{psmallmatrix}" + chr(10)
             case "pmatrix":
@@ -67,7 +69,7 @@ def array2latex(
     for ii in range(X.shape[0]):
         r = X[ii, :]
         if isinstance(r[0], str):
-            ss += " & ".join(["%s" % x for x in r])
+            ss += " & ".join([f"{x}" for x in r])
         else:
             ss += " & ".join([floatfmt % x for x in r])
         if ii < (X.shape[0]) - 1 or not header:
@@ -77,7 +79,7 @@ def array2latex(
         if ii in hlines:
             ss += r"\hline" + chr(10)
             if hlinespace is not None:
-                ss += "\\rule[+%.2fex]{0pt}{0pt}" % hlinespace
+                ss += f"\\rule[+{hlinespace:.2f}ex]{{0pt}}{{0pt}}"
     if header:
         match mode:
             case "tabular":
@@ -145,7 +147,7 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
     npoints = points.shape[1]
 
     if labels is None:
-        lbl: Sequence[str] = ["%d" % i for i in range(npoints)]
+        lbl: Sequence[str] = [f"{i}" for i in range(npoints)]
     else:
         lbl = labels
         if isinstance(lbl, int):
@@ -236,7 +238,7 @@ def monitorSizes(verbose: int = 0) -> list[tuple[int]]:
 
     if verbose:
         for ii, w in enumerate(monitor_sizes):
-            print("monitor %d: %s" % (ii, str(w)))
+            print(f"monitor {ii}: {w}")
     return monitor_sizes
 
 
@@ -303,7 +305,7 @@ def tilefigs(
         lst = lst.flatten().astype(int)
 
     if verbose:
-        print("tilefigs: ww %s, w %d h %d" % (str(ww), w, h))
+        print(f"tilefigs: ww {ww}, w {w} h {h}")
     for ii, f in enumerate(lst):
         if isinstance(f, matplotlib.figure.Figure):
             fignum = f.number  # type: ignore
@@ -322,8 +324,6 @@ def tilefigs(
         iy = int(np.floor(float(iim) / geometry[0]))
         x: int = int(ww[0]) + int(ix * w)  # type: ignore
         y: int = int(ww[1]) + int(iy * h)  # type: ignore
-        if verbose:
-            print("ii %d: %d %d: f %d: %d %d %d %d" % (ii, ix, iy, fignum, x, y, w, h))
         if be == "WXAgg":
             fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
             fig.canvas.manager.window.SetSize((w, h))  # type: ignore
@@ -481,7 +481,7 @@ def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs)
     return xx
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__" and 0:  # pragma: no cover
     plt.figure(10)
     plt.clf()
     plt.plot([0, 1, 2, 3], [0, 3, 1, 3], ".-")
@@ -515,7 +515,7 @@ def setWindowRectangle(
         mngr.canvas.manager.window.SetPosition((x, y))
         mngr.canvas.manager.window.SetSize((w, h))
     elif be == "TkAgg":
-        _ = mngr.canvas.manager.window.wm_geometry("%dx%d+%d+%d" % (w, h, x, y))  # type: ignore
+        _ = mngr.canvas.manager.window.wm_geometry(f"{w}x{h}x+{x}+{y}")  # type: ignore
     elif be == "module://IPython.kernel.zmq.pylab.backend_inline":
         pass
     else:
@@ -523,3 +523,174 @@ def setWindowRectangle(
         mngr.canvas.manager.window.move(x, y)
         mngr.canvas.manager.window.resize(w, h)
         mngr.canvas.manager.window.setGeometry(x, y, w, h)
+
+
+def interleaved_benchmark(
+    func: Callable,
+    func2: Callable,
+    *args,
+    target_duration=1.0,
+    **kwargs,
+):
+    t0 = time.perf_counter()
+    for ii in range(1, 30):
+        func(*args, **kwargs)
+        dt = time.perf_counter() - t0
+        if dt > 0.1:
+            break
+    if dt < 0.01:
+        t0 = time.perf_counter()
+        for ii in range(1, 60):
+            for ii in range(50):
+                func(*args, **kwargs)
+            dt = time.perf_counter() - t0
+            if dt > 0.1:
+                break
+
+        dt /= 50
+    dt = dt / ii
+
+    target_duration // (2 * dt)
+
+    number_of_iterations = max(1, min(10_000_000, int(target_duration // (2 * dt))))
+    # round to power of 10 or half of power of 10
+    log_ten = math.log10(number_of_iterations)
+    log_ten = (log_ten // 1) + (0 if (log_ten % 1) < math.log(5) else math.log(5))
+    number_of_iterations = int(10**log_ten)
+
+    dt1 = 0
+    dt2 = 0
+
+    if number_of_iterations > 1_000:
+        blocksize = 200
+    else:
+        blocksize = 1
+
+    if kwargs:
+        if blocksize > 1:
+            for ii in range(number_of_iterations // blocksize):
+                t0 = time.perf_counter()
+                for _ in repeat(None, blocksize):
+                    func(*args, **kwargs)
+                dt1 += time.perf_counter() - t0
+
+                t0 = time.perf_counter()
+                for _ in repeat(None, blocksize):
+                    func2(*args, **kwargs)
+                dt2 += time.perf_counter() - t0
+        else:
+            for ii in range(number_of_iterations):
+                t0 = time.perf_counter()
+                func(*args, **kwargs)
+                dt1 += time.perf_counter() - t0
+
+                t0 = time.perf_counter()
+                func2(*args, **kwargs)
+                dt2 += time.perf_counter() - t0
+    else:
+        if len(args) == 0:
+            if blocksize > 1:
+                for ii in range(number_of_iterations // blocksize):
+                    t0 = time.perf_counter()
+                    for _ in repeat(None, blocksize):
+                        func()
+                    dt1 += time.perf_counter() - t0
+
+                    t0 = time.perf_counter()
+                    for _ in repeat(None, blocksize):
+                        func2()
+                    dt2 += time.perf_counter() - t0
+            else:
+                for ii in range(number_of_iterations):
+                    t0 = time.perf_counter()
+                    func()
+                    dt1 += time.perf_counter() - t0
+
+                    t0 = time.perf_counter()
+                    func2()
+                    dt2 += time.perf_counter() - t0
+        elif len(args) == 1:
+            arg = args[0]
+
+            if blocksize > 1:
+                for ii in range(number_of_iterations // blocksize):
+                    t0 = time.perf_counter()
+                    for _ in repeat(None, blocksize):
+                        func(arg)
+                    dt1 += time.perf_counter() - t0
+
+                    t0 = time.perf_counter()
+                    for _ in repeat(None, blocksize):
+                        func2(arg)
+                    dt2 += time.perf_counter() - t0
+            else:
+                for ii in range(number_of_iterations):
+                    t0 = time.perf_counter()
+                    func(arg)
+                    dt1 += time.perf_counter() - t0
+
+                    t0 = time.perf_counter()
+                    func2(arg)
+                    dt2 += time.perf_counter() - t0
+        else:
+            if blocksize > 1:
+                for ii in range(number_of_iterations // blocksize):
+                    t0 = time.perf_counter()
+                    for _ in repeat(None, blocksize):
+                        func(*args)
+                    dt1 += time.perf_counter() - t0
+
+                    t0 = time.perf_counter()
+                    for _ in repeat(None, blocksize):
+                        func2(*args)
+                    dt2 += time.perf_counter() - t0
+            else:
+                for ii in range(number_of_iterations):
+                    t0 = time.perf_counter()
+                    func(*args)
+                    dt1 += time.perf_counter() - t0
+
+                    t0 = time.perf_counter()
+                    func2(*args)
+                    dt2 += time.perf_counter() - t0
+
+    gain = dt1 / dt2
+    per_loop1 = (dt1 / number_of_iterations) * 1e6
+    per_loop2 = (dt2 / number_of_iterations) * 1e6
+
+    # format...
+    gain_txt = f"gain {gain:.2f} ({number_of_iterations} loops)"
+    if per_loop1 < 1:
+        print(f"{per_loop1 * 1e3:.2f} ns ± ? μs per loop vs {per_loop2 * 1e3:.2f} ns, " + gain_txt)
+    else:
+        print(f"{per_loop1:.2f} μs ± ? μs per loop vs {per_loop2:.2f} μs, " + gain_txt)
+    return dt1, dt2
+
+
+if __name__ == "__main__":
+
+    def g(x):
+        return x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x
+
+    def h(x):
+        y = x * x
+        z = y * y
+        w = z * z
+        return w * w
+
+    dt1, dt2 = interleaved_benchmark(g, h, 10)
+    print(f"total {dt1 + dt2:.2f} [s]")
+
+
+def _repr_pretty_rich_(self, p: Any, cycle: bool) -> None:
+    del cycle
+    z = rich.pretty.Pretty(self)
+    s = (z._repr_mimebundle_([], []))["text/plain"]
+    p.text(s)
+
+
+def add_rich_repr[T: type](cls: T) -> T:
+    """Add pretty representation method to a class using rich"""
+
+    cls._repr_pretty_ = _repr_pretty_rich_
+    return cls

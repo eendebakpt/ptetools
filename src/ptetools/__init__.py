@@ -1,1 +1,1 @@
-from ptetools.version import __version__ # noqa
+from ptetools.version import __version__  # noqa

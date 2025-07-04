@@ -28,13 +28,11 @@ ComplexArray = np.typing.NDArray[np.complex128]
 
 
 @overload
-def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]:
-    ...
+def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]: ...
 
 
 @overload
-def counts2fractions(counts: CountsType) -> FractionsType:
-    ...
+def counts2fractions(counts: CountsType) -> FractionsType: ...
 
 
 def largest_remainder_rounding(fractions: FloatArray, total: int) -> IntArray:
