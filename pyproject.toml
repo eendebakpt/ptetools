@@ -21,23 +21,25 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
 ]
 keywords = [
 ]
 dynamic = ["version"]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-    "numpy",
+    "numpy >= 2.2",
     "matplotlib",
     "rich",
     "qtpy",
     "PyQt5",
     "qutip",
     "lmfit",
-    "qiskit>=1.2",
+    "IPython", 
+    "qiskit>=2.0",
     "qiskit-experiments",
     "termcolor",
     "pandas",
@@ -85,7 +87,7 @@ lint.ignore = [ "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`,
            "E712" # https://github.com/astral-sh/ruff/issues/4560
         ]
 line-length = 120
-target-version = "py310"
+target-version = "py312"
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 
 lint.per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
