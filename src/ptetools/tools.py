@@ -11,7 +11,7 @@ import matplotlib
 import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
-import rich
+import rich.pretty
 
 
 def is_spyder_environment() -> bool:
