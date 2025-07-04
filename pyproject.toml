@@ -21,23 +21,24 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
 ]
 keywords = [
 ]
 dynamic = ["version"]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-    "numpy",
+    "numpy >= 2.2",
     "matplotlib",
     "rich",
     "qtpy",
     "PyQt5",
     "qutip",
     "lmfit",
-    "qiskit>=1.2",
+    "qiskit>=2.0",
     "qiskit-experiments",
     "termcolor",
     "pandas",
