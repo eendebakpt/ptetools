@@ -20,11 +20,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
     - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v5
         with:
