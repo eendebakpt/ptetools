@@ -406,6 +406,44 @@ class measure_time:
         p.text(s)
 
 
+class NoValue:
+    pass
+
+
+class attribute_context:
+    NoValue = NoValue()
+
+    def __init__(self, obj, attrs: None | dict[str, Any] = None, **kwargs):
+        """Context manager to update attributes of an object
+
+        Example:
+            >>> import sys
+            >>> with attribute_context(sys, copyright = 'Python license'):
+            >>>     pass
+        """
+        self.obj = obj
+        if attrs is None:
+            attrs = {}
+        self.kwargs = attrs | kwargs
+        self.original = None
+
+    def __enter__(self) -> "attribute_context":
+        self.original = {key: getattr(self.obj, key) for key in self.kwargs}
+        for key, value in self.kwargs.items():
+            if value is not self.NoValue:
+                setattr(self.obj, key, value)
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> Literal[False]:
+        for key, value in self.original.items():
+            setattr(self.obj, key, value)
+        self.original = None
+
+
 # %%
 def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz") -> tuple[str, Any]:
     """Profile an expression with cProfile and display the results using snakeviz
