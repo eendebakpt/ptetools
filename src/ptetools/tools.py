@@ -1,3 +1,5 @@
+import contextlib
+import logging
 import math
 import os
 import tempfile
@@ -732,3 +734,23 @@ def add_rich_repr[T: type](cls: T) -> T:
 
     cls._repr_pretty_ = _repr_pretty_rich_
     return cls
+
+
+@contextlib.contextmanager
+def logging_context(level: int = logging.INFO, logger: None | logging.Logger = None):
+    """A context manager that changes the logging level
+
+    Args:
+        level: Logging level to set in the context
+        logger: Logger to update, if None then update the default logger
+
+    """
+    if logger is None:
+        logger = logging.getLogger()
+    previous_level = logger.getEffectiveLevel()
+    logger.setLevel(level)
+
+    try:
+        yield
+    finally:
+        logger.setLevel(previous_level)
