@@ -729,7 +729,8 @@ def _repr_pretty_rich_(self, p: Any, cycle: bool) -> None:
     p.text(s)
 
 
-def add_rich_repr[T: type](cls: T) -> T:
+# def add_rich_repr[T: type](cls: T) -> T:  # python 3.12+
+def add_rich_repr(cls):
     """Add pretty representation method to a class using rich"""
 
     cls._repr_pretty_ = _repr_pretty_rich_
