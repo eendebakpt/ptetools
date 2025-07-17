@@ -1,3 +1,5 @@
+import contextlib
+import logging
 import math
 import os
 import tempfile
@@ -406,6 +408,44 @@ class measure_time:
         p.text(s)
 
 
+class NoValue:
+    pass
+
+
+class attribute_context:
+    NoValue = NoValue()
+
+    def __init__(self, obj, attrs: None | dict[str, Any] = None, **kwargs):
+        """Context manager to update attributes of an object
+
+        Example:
+            >>> import sys
+            >>> with attribute_context(sys, copyright = 'Python license'):
+            >>>     pass
+        """
+        self.obj = obj
+        if attrs is None:
+            attrs = {}
+        self.kwargs = attrs | kwargs
+        self.original = None
+
+    def __enter__(self) -> "attribute_context":
+        self.original = {key: getattr(self.obj, key) for key in self.kwargs}
+        for key, value in self.kwargs.items():
+            if value is not self.NoValue:
+                setattr(self.obj, key, value)
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> Literal[False]:
+        for key, value in self.original.items():
+            setattr(self.obj, key, value)
+        self.original = None
+
+
 # %%
 def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz") -> tuple[str, Any]:
     """Profile an expression with cProfile and display the results using snakeviz
@@ -689,8 +729,29 @@ def _repr_pretty_rich_(self, p: Any, cycle: bool) -> None:
     p.text(s)
 
 
-def add_rich_repr[T: type](cls: T) -> T:
+# def add_rich_repr[T: type](cls: T) -> T:  # python 3.12+
+def add_rich_repr(cls):
     """Add pretty representation method to a class using rich"""
 
     cls._repr_pretty_ = _repr_pretty_rich_
     return cls
+
+
+@contextlib.contextmanager
+def logging_context(level: int = logging.INFO, logger: None | logging.Logger = None):
+    """A context manager that changes the logging level
+
+    Args:
+        level: Logging level to set in the context
+        logger: Logger to update, if None then update the default logger
+
+    """
+    if logger is None:
+        logger = logging.getLogger()
+    previous_level = logger.getEffectiveLevel()
+    logger.setLevel(level)
+
+    try:
+        yield
+    finally:
+        logger.setLevel(previous_level)
