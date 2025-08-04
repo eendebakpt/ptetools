@@ -9,6 +9,7 @@ from IPython.lib.pretty import pretty
 
 from ptetools.tools import (
     add_rich_repr,
+    attribute_context,
     cprint,
     make_blocks,
     measure_time,
@@ -61,6 +62,15 @@ class TestTools(unittest.TestCase):
 
 #    def test_monitorSizes(self):
 #        monitorSizes()
+
+
+def test_attribute_context():
+    import sys
+
+    value = sys.api_version
+    with attribute_context(sys, api_version=10):
+        assert sys.api_version == 10
+    assert sys.api_version == value
 
 
 def test_cprint():
