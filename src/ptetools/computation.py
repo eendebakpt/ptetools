@@ -1,9 +1,9 @@
 import itertools
 from collections.abc import Callable, Sequence
+from typing import Any
 
 from joblib import Parallel, delayed
-
-from ptetools.tools import tqdm
+from tqdm import tqdm
 
 
 def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
@@ -14,7 +14,7 @@ def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
 
 def parallel_execute(
     method: Callable,
-    data: Sequence[any],
+    data: Sequence[Any],
     seed: None | int = None,
     *,
     n_jobs: int = 5,

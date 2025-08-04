@@ -3,7 +3,7 @@ from typing import Any
 
 try:
     from quantuminspire.credentials import get_token_authentication, load_account
-    from quantuminspire.qiskit import QI
+    from quantuminspire.qiskit import QI  # ty: ignore
 except ImportError:
     import warnings
 
