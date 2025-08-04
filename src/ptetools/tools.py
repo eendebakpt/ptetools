@@ -303,8 +303,8 @@ def tilefigs(
 
     if isinstance(lst, int):
         lst = [lst]
-    elif isinstance(lst, np.ndarray):
-        lst = lst.flatten().astype(int)
+    elif isinstance(lst, np.ndarray):  # ty: ignore
+        lst = lst.flatten().astype(int)  # ty: ignore
 
     if verbose:
         print(f"tilefigs: ww {ww}, w {w} h {h}")
@@ -434,6 +434,7 @@ class attribute_context:
         for key, value in self.kwargs.items():
             if value is not self.NoValue:
                 setattr(self.obj, key, value)
+        return self
 
     def __exit__(
         self,
@@ -444,6 +445,7 @@ class attribute_context:
         for key, value in self.original.items():
             setattr(self.obj, key, value)
         self.original = None
+        return False
 
 
 # %%

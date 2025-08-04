@@ -2,7 +2,7 @@ import datetime
 from typing import Any
 
 try:
-    from quantuminspire.credentials import get_token_authentication, load_account
+    from quantuminspire.credentials import get_token_authentication, load_account  # ty: ignore
     from quantuminspire.qiskit import QI  # ty: ignore
 except ImportError:
     import warnings
@@ -50,8 +50,8 @@ if __name__ == "__main__":
 
 # %%
 def report_qi_status():  # pragma: no cover
-    from quantuminspire.api import QuantumInspireAPI
-    from quantuminspire.credentials import get_token_authentication, load_account
+    from quantuminspire.api import QuantumInspireAPI  # ty: ignore
+    from quantuminspire.credentials import get_token_authentication, load_account  # ty: ignore
     from rich import print as rprint
 
     QI_URL = r"https://api.quantum-inspire.com"
