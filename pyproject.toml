@@ -41,6 +41,7 @@ dependencies = [
     "qutip",
     "lmfit",
     "IPython", 
+    "joblib",
     "qiskit>=2.0",
     "qiskit-experiments",
     "termcolor",
