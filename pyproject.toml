@@ -40,6 +40,7 @@ dependencies = [
     "PyQt5",
     "qutip",
     "lmfit",
+    "tqdm",
     "IPython", 
     "qiskit>=2.0",
     "qiskit-experiments",
