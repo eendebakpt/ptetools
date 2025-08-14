@@ -757,3 +757,33 @@ def logging_context(level: int = logging.INFO, logger: None | logging.Logger = N
         yield
     finally:
         logger.setLevel(previous_level)
+
+
+# %%
+
+
+class ReprPrettyTester:
+    def __init__(self, obj=None, cycle: bool = False):
+        self.txt = ""
+
+        if obj is not None:
+            obj._repr_pretty_(self, cycle=cycle)
+
+    def text(self, v):
+        self.txt += v
+
+    def _repr_pretty_(self, p: Any, cycle: bool) -> None:
+        p.text(f"{self.__class__.__name__}: {self.txt}")
+
+
+if __name__ == "__main__":
+    from dataclasses import dataclass
+
+    @add_rich_repr
+    @dataclass
+    class A:
+        x: int = 10
+        y: str = "hi"
+
+    r = ReprPrettyTester(A())
+    print(r.txt)
