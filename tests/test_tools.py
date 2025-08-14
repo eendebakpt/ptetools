@@ -53,7 +53,7 @@ class TestTools(unittest.TestCase):
         plt.close(1)
 
     def test_memory_report(self):
-        x = memory_report(2, verbose=0)
+        x = memory_report(2, verbose=False)
         assert "<class 'dict'>" in x
 
     def test_profile_expression(self):

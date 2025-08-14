@@ -9,6 +9,9 @@ from typing import Any, overload
 import matplotlib.pyplot as plt
 import numpy as np
 import qiskit
+import qiskit.circuit
+import qiskit.circuit.operation
+import qiskit.converters
 import qiskit.quantum_info as qi
 import qiskit.result
 import qiskit_experiments.framework.containers.figure_data
@@ -83,13 +86,13 @@ if __name__ == "__main__":
 def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
     """Convert list of counts to list of fractions"""
     if isinstance(counts, Sequence):
-        return [counts2fractions(c) for c in counts]
-    total = sum(counts.values())
+        return [counts2fractions(c) for c in counts]  # ty: ignore
+    total = sum(counts.values())  # ty: ignore
     if total == 0:
         # corner case with no selected shots
         total = 1
 
-    return sorted_dictionary({k: v / total for k, v in counts.items()})
+    return sorted_dictionary({k: v / total for k, v in counts.items()})  # ty: ignore
 
 
 def counts2dense(c: CountsType, number_of_bits: int) -> np.ndarray:
@@ -101,7 +104,7 @@ def counts2dense(c: CountsType, number_of_bits: int) -> np.ndarray:
     return d
 
 
-def dense2sparse(d: np.ndarray) -> CountsType:
+def dense2sparse(d: IntArray) -> CountsType:
     """Convert dictionary with fractions or counts to a dense array"""
     d = np.asanyarray(d)
     number_of_bits = int(np.log2(d.size))
@@ -136,7 +139,7 @@ def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]
         state = state.compose(cl, (0,))
     else:
         raise NotImplementedError(f"number_of_qubits {number_of_qubits}")
-    return state, cl_index
+    return state, cl_index  # ty: ignore
 
 
 # %%
@@ -230,7 +233,7 @@ def qiskit_experiments_to_figure(
 
 
 @lru_cache
-def delay_gate(duration: float, dt: float, round_dt: bool) -> float:
+def delay_gate(duration: float, dt: float, round_dt: bool) -> qiskit.circuit.operation.Operation:
     n = duration / dt
     if round_dt:
         n = round(n)

@@ -10,10 +10,12 @@ from types import TracebackType
 from typing import Any, Literal
 
 import matplotlib
+import matplotlib.figure
 import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
 import rich.pretty
+from termcolor import colored
 
 
 def is_spyder_environment() -> bool:
@@ -118,15 +120,13 @@ def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
     return blocks
 
 
-def sorted_dictionary(d: dict[Any, Any], *, key: Callable = None) -> dict[Any, Any]:
+def sorted_dictionary(d: dict[Any, Any], *, key: Callable | None = None) -> dict[Any, Any]:
     """Sort keys of a dictionary"""
     return {k: d[k] for k in sorted(d, key=key)}
 
 
-def cprint(s: str, color: str = "cyan", *args, **kwargs):
+def cprint(s: str, color: str = "cyan", *args: Any, **kwargs: Any):
     """Colored print of string"""
-    from termcolor import colored
-
     print(colored(s, color=color), *args, **kwargs)
 
 
@@ -263,7 +263,7 @@ def static_var(variable_name: str, value: Any) -> Callable:
 def tilefigs(
     lst: list[int | plt.Figure],
     geometry: Sequence[int] | None = None,
-    ww: list[int] | None = None,
+    ww: tuple[int] | list[int] | None = None,
     raisewindows: bool = False,
     tofront: bool = False,
     verbose: int = 0,
@@ -303,8 +303,8 @@ def tilefigs(
 
     if isinstance(lst, int):
         lst = [lst]
-    elif isinstance(lst, np.ndarray):
-        lst = lst.flatten().astype(int)
+    elif isinstance(lst, np.ndarray):  # ty: ignore
+        lst = lst.flatten().astype(int)  # ty: ignore
 
     if verbose:
         print(f"tilefigs: ww {ww}, w {w} h {h}")
@@ -434,6 +434,7 @@ class attribute_context:
         for key, value in self.kwargs.items():
             if value is not self.NoValue:
                 setattr(self.obj, key, value)
+        return self
 
     def __exit__(
         self,
@@ -444,10 +445,11 @@ class attribute_context:
         for key, value in self.original.items():
             setattr(self.obj, key, value)
         self.original = None
+        return False
 
 
 # %%
-def profile_expression(expression: str, N: int | None = 1, gui: str = "snakeviz") -> tuple[str, Any]:
+def profile_expression(expression: str, N: int | None = 1, gui: None | str = "snakeviz") -> tuple[str, Any]:
     """Profile an expression with cProfile and display the results using snakeviz
 
     Args:
@@ -552,17 +554,17 @@ def setWindowRectangle(
         mngr = plt.get_current_fig_manager()
     be = matplotlib.get_backend()
     if be == "WXAgg":
-        mngr.canvas.manager.window.SetPosition((x, y))
-        mngr.canvas.manager.window.SetSize((w, h))
+        mngr.canvas.manager.window.SetPosition((x, y))  # ty: ignore
+        mngr.canvas.manager.window.SetSize((w, h))  # ty: ignore
     elif be == "TkAgg":
         _ = mngr.canvas.manager.window.wm_geometry(f"{w}x{h}x+{x}+{y}")  # type: ignore
     elif be == "module://IPython.kernel.zmq.pylab.backend_inline":
         pass
     else:
         # assume Qt canvas
-        mngr.canvas.manager.window.move(x, y)
-        mngr.canvas.manager.window.resize(w, h)
-        mngr.canvas.manager.window.setGeometry(x, y, w, h)
+        mngr.canvas.manager.window.move(x, y)  # ty: ignore
+        mngr.canvas.manager.window.resize(w, h)  # ty: ignore
+        mngr.canvas.manager.window.setGeometry(x, y, w, h)  # ty: ignore
 
 
 def interleaved_benchmark(
@@ -733,7 +735,7 @@ def _repr_pretty_rich_(self, p: Any, cycle: bool) -> None:
 def add_rich_repr(cls):
     """Add pretty representation method to a class using rich"""
 
-    cls._repr_pretty_ = _repr_pretty_rich_
+    cls._repr_pretty_ = _repr_pretty_rich_  # ty: ignore
     return cls
 
 
