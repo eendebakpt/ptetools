@@ -183,16 +183,14 @@ def memory_report(
     rr_many = {key: value for key, value in sorted(rr_many.items(), key=operator.itemgetter(1), reverse=True)}
 
     keys = list(rr_many.keys())
-
+    results = {str(key): rr_many[key] for key in keys[:maximum_number_to_show]}
     if verbose:
         print("memory report:")
-    for key in keys[:maximum_number_to_show]:
-        nn = rr_many[key]
+    for key, nn in results.items():
         if nn > 2000:
             if verbose:
                 print(f"{key}: {nn}")
 
-    results = {str(key): value for key, value in rr_many.items()}
     return results
 
 
