@@ -183,16 +183,14 @@ def memory_report(
     rr_many = {key: value for key, value in sorted(rr_many.items(), key=operator.itemgetter(1), reverse=True)}
 
     keys = list(rr_many.keys())
-
+    results = {str(key): rr_many[key] for key in keys[:maximum_number_to_show]}
     if verbose:
         print("memory report:")
-    for key in keys[:maximum_number_to_show]:
-        nn = rr_many[key]
+    for key, nn in results.items():
         if nn > 2000:
             if verbose:
                 print(f"{key}: {nn}")
 
-    results = {str(key): value for key, value in rr_many.items()}
     return results
 
 
@@ -413,7 +411,7 @@ class NoValue:
 
 
 class attribute_context:
-    NoValue = NoValue()
+    no_value = NoValue()
 
     def __init__(self, obj, attrs: None | dict[str, Any] = None, **kwargs):
         """Context manager to update attributes of an object
@@ -432,7 +430,7 @@ class attribute_context:
     def __enter__(self) -> "attribute_context":
         self.original = {key: getattr(self.obj, key) for key in self.kwargs}
         for key, value in self.kwargs.items():
-            if value is not self.NoValue:
+            if value is not self.no_value:
                 setattr(self.obj, key, value)
         return self
 
@@ -571,7 +569,7 @@ def interleaved_benchmark(
     func: Callable,
     func2: Callable,
     *args,
-    target_duration=1.0,
+    target_duration: float = 1.0,
     **kwargs,
 ):
     t0 = time.perf_counter()
@@ -581,15 +579,16 @@ def interleaved_benchmark(
         if dt > 0.1:
             break
     if dt < 0.01:
+        n_inner = 50
         t0 = time.perf_counter()
         for ii in range(1, 60):
-            for ii in range(50):
+            for ii in range(n_inner):
                 func(*args, **kwargs)
             dt = time.perf_counter() - t0
             if dt > 0.1:
                 break
 
-        dt /= 50
+        dt /= n_inner
     dt = dt / ii
 
     target_duration // (2 * dt)
@@ -757,3 +756,33 @@ def logging_context(level: int = logging.INFO, logger: None | logging.Logger = N
         yield
     finally:
         logger.setLevel(previous_level)
+
+
+# %%
+
+
+class ReprPrettyTester:
+    def __init__(self, obj=None, cycle: bool = False):
+        self.txt = ""
+
+        if obj is not None:
+            obj._repr_pretty_(self, cycle=cycle)
+
+    def text(self, v):
+        self.txt += v
+
+    def _repr_pretty_(self, p: Any, cycle: bool) -> None:
+        p.text(f"{self.__class__.__name__}: {self.txt}")
+
+
+if __name__ == "__main__":
+    from dataclasses import dataclass
+
+    @add_rich_repr
+    @dataclass
+    class A:
+        x: int = 10
+        y: str = "hi"
+
+    r = ReprPrettyTester(A())
+    print(r.txt)
