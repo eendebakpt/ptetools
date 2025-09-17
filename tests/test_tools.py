@@ -53,15 +53,11 @@ class TestTools(unittest.TestCase):
         plt.close(1)
 
     def test_memory_report(self):
-        x = memory_report(2, verbose=False)
-        assert "<class 'dict'>" in x
+        x = memory_report(6, verbose=False)
+        assert "<class 'tuple'>" in x
 
     def test_profile_expression(self):
         _ = profile_expression("import time", gui=None)
-
-
-#    def test_monitorSizes(self):
-#        monitorSizes()
 
 
 def test_attribute_context():
