@@ -411,7 +411,7 @@ class NoValue:
 
 
 class attribute_context:
-    NoValue = NoValue()
+    no_value = NoValue()
 
     def __init__(self, obj, attrs: None | dict[str, Any] = None, **kwargs):
         """Context manager to update attributes of an object
@@ -430,7 +430,7 @@ class attribute_context:
     def __enter__(self) -> "attribute_context":
         self.original = {key: getattr(self.obj, key) for key in self.kwargs}
         for key, value in self.kwargs.items():
-            if value is not self.NoValue:
+            if value is not self.no_value:
                 setattr(self.obj, key, value)
         return self
 
@@ -569,7 +569,7 @@ def interleaved_benchmark(
     func: Callable,
     func2: Callable,
     *args,
-    target_duration=1.0,
+    target_duration: float = 1.0,
     **kwargs,
 ):
     t0 = time.perf_counter()
@@ -579,15 +579,16 @@ def interleaved_benchmark(
         if dt > 0.1:
             break
     if dt < 0.01:
+        n_inner = 50
         t0 = time.perf_counter()
         for ii in range(1, 60):
-            for ii in range(50):
+            for ii in range(n_inner):
                 func(*args, **kwargs)
             dt = time.perf_counter() - t0
             if dt > 0.1:
                 break
 
-        dt /= 50
+        dt /= n_inner
     dt = dt / ii
 
     target_duration // (2 * dt)
