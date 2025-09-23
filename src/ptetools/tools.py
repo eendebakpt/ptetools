@@ -1,21 +1,26 @@
-import contextlib
-import logging
 import math
 import os
 import tempfile
 import time
 from collections.abc import Callable, Sequence
 from itertools import chain, repeat
-from types import TracebackType
 from typing import Any, Literal
 
-import matplotlib
-import matplotlib.figure
-import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
 import rich.pretty
 from termcolor import colored
+
+from ptetools._qtt import (  # noqa
+    attribute_context,
+    ginput,
+    logging_context,
+    measure_time,
+    monitorSizes,
+    robust_cost_function,
+    setWindowRectangle,
+    tilefigs,
+)
 
 
 def is_spyder_environment() -> bool:
@@ -194,259 +199,6 @@ def memory_report(
     return results
 
 
-""" Code below is derived from QTT
-
-Copyright 2023 QuTech (TNO, TU Delft)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-"""
-
-
-def monitorSizes(verbose: int = 0) -> list[tuple[int]]:
-    """Return monitor sizes
-
-    Args:
-        verbose: Verbosity level
-    Returns:
-        List with for each screen a list x, y, width, height
-    """
-    import qtpy.QtWidgets  # lazy import
-
-    _ = qtpy.QtWidgets.QApplication.instance()  # type: ignore
-    _qd = qtpy.QtWidgets.QDesktopWidget()  # type: ignore
-
-    nmon = _qd.screenCount()
-    monitor_rectangles = [_qd.screenGeometry(ii) for ii in range(nmon)]
-    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]  # type: ignore
-
-    if verbose:
-        for ii, w in enumerate(monitor_sizes):
-            print(f"monitor {ii}: {w}")
-    return monitor_sizes
-
-
-def static_var(variable_name: str, value: Any) -> Callable:
-    """Helper method to create a static variable on an object
-
-    Args:
-        variable_name: Variable to create
-        value: Initial value to set
-    """
-
-    def static_variable_decorator(func):
-        setattr(func, variable_name, value)
-        return func
-
-    return static_variable_decorator
-
-
-@static_var("monitorindex", -1)
-def tilefigs(
-    lst: list[int | plt.Figure],
-    geometry: Sequence[int] | None = None,
-    ww: tuple[int] | list[int] | None = None,
-    raisewindows: bool = False,
-    tofront: bool = False,
-    verbose: int = 0,
-    monitorindex: int | None = None,
-    y_offset: int = 20,
-    window: tuple[int] | None = None,
-) -> None:
-    """Tile figure windows on a specified area
-
-    Arguments
-    ---------
-        lst: list of figure handles or integers
-        geometry: 2x1 array, layout of windows
-        ww: monitor sizes
-        raisewindows: When True, request that the window be raised to appear above other windows
-        tofront: When True, activate the figure
-        verbose: Verbosity level
-        monitorindex: index of monitor to use for output
-        y_offset: Offset for window tile bars
-    """
-
-    if geometry is None:
-        geometry = (2, 2)
-    mngr = plt.get_current_fig_manager()
-    be = matplotlib.get_backend()
-    if monitorindex is None:
-        monitorindex = tilefigs.monitorindex
-
-    if ww is None:
-        ww = monitorSizes()[monitorindex]
-
-    if window is not None:
-        ww = window
-
-    w = ww[2] / geometry[0]  # type: ignore
-    h = ww[3] / geometry[1]  # type: ignore
-
-    if isinstance(lst, int):
-        lst = [lst]
-    elif isinstance(lst, np.ndarray):  # ty: ignore
-        lst = lst.flatten().astype(int)  # ty: ignore
-
-    if verbose:
-        print(f"tilefigs: ww {ww}, w {w} h {h}")
-    for ii, f in enumerate(lst):
-        if isinstance(f, matplotlib.figure.Figure):
-            fignum = f.number  # type: ignore
-        elif isinstance(f, (int, np.int32, np.int64)):
-            fignum = f
-        else:
-            try:
-                fignum = f.fig.number
-            except BaseException:
-                fignum = -1
-        if not plt.fignum_exists(fignum) and verbose >= 2:
-            print(f"tilefigs: f {f} fignum: {str(fignum)}")
-        fig = plt.figure(fignum)
-        iim = ii % np.prod(geometry)
-        ix = iim % geometry[0]
-        iy = int(np.floor(float(iim) / geometry[0]))
-        x: int = int(ww[0]) + int(ix * w)  # type: ignore
-        y: int = int(ww[1]) + int(iy * h)  # type: ignore
-        if be == "WXAgg":
-            fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
-            fig.canvas.manager.window.SetSize((w, h))  # type: ignore
-        elif be == "WX":
-            fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
-            fig.canvas.manager.window.SetSize((w, h))  # type: ignore
-        elif be == "agg":
-            fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
-            fig.canvas.manager.window.resize(w, h)  # type: ignore
-        elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg", "qtagg"):
-            # assume Qt canvas
-            try:
-                # fig.canvas.manager.window.move(x, y+y_offset)  # type: ignore
-                # fig.canvas.manager.window.resize(int(w), int(h))  # type: ignore
-                fig.canvas.manager.window.setGeometry(x, y + y_offset, int(w), int(h))  # type: ignore
-            except Exception as e:
-                print(
-                    "problem with window manager: ",
-                )
-                print(be)
-                print(e)
-        else:
-            raise NotImplementedError(f"unknown backend {be}")
-        if raisewindows:
-            mngr.window.raise_()  # type: ignore
-        if tofront:
-            plt.figure(f)
-
-
-class measure_time:
-    """Create context manager that measures execution time and prints to stdout
-
-    Example:
-        >>> import time
-        >>> with measure_time():
-        ...     time.sleep(.1)
-    """
-
-    def __init__(self, message: str | None = "dt: "):
-        self.message = message
-        self.dt = float("nan")
-
-    def __enter__(self) -> "measure_time":
-        self.start_time = time.perf_counter()
-        return self
-
-    @property
-    def current_delta_time(self) -> float:
-        """Return time since start of the context
-
-        Returns:
-            Time in seconds
-        """
-        return time.perf_counter() - self.start_time
-
-    @property
-    def delta_time(self) -> float:
-        """Return time spend in the context
-
-        If still in the context, return nan.
-
-        Returns:
-            Time in seconds
-        """
-        return self.dt
-
-    def __exit__(  # pylint: disable-all
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> Literal[False]:
-        self.dt = time.perf_counter() - self.start_time
-
-        if self.message is not None:
-            print(f"{self.message} {self.dt:.3f} [s]")
-
-        return False
-
-    def _repr_pretty_(self, p: Any, cycle: bool) -> None:
-        del cycle
-        s = f"<{self.__class__.__name__} at 0x{id(self):x}: dt {self.delta_time:.3f}>\n"
-        p.text(s)
-
-
-class NoValue:
-    pass
-
-
-class attribute_context:
-    no_value = NoValue()
-
-    def __init__(self, obj, attrs: None | dict[str, Any] = None, **kwargs):
-        """Context manager to update attributes of an object
-
-        Example:
-            >>> import sys
-            >>> with attribute_context(sys, copyright = 'Python license'):
-            >>>     pass
-        """
-        self.obj = obj
-        if attrs is None:
-            attrs = {}
-        self.kwargs = attrs | kwargs
-        self.original = None
-
-    def __enter__(self) -> "attribute_context":
-        self.original = {key: getattr(self.obj, key) for key in self.kwargs}
-        for key, value in self.kwargs.items():
-            if value is not self.no_value:
-                setattr(self.obj, key, value)
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_traceback: TracebackType | None,
-    ) -> Literal[False]:
-        for key, value in self.original.items():
-            setattr(self.obj, key, value)
-        self.original = None
-        return False
-
-
-# %%
 def profile_expression(expression: str, N: int | None = 1, gui: None | str = "snakeviz") -> tuple[str, Any]:
     """Profile an expression with cProfile and display the results using snakeviz
 
@@ -492,77 +244,6 @@ def profile_expression(expression: str, N: int | None = 1, gui: None | str = "sn
     else:
         r = None
     return statsfile, r
-
-
-def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs):  # pragma: no cover
-    """Select points from matplotlib figure
-
-    Press middle mouse button to stop selection
-
-    Arguments:
-        number_of_points: number of points to select
-        marker: Marker style for plotting. If None, do not plot
-        kwargs : Arguments passed to plot function
-    Returns:
-        Numpy array with selected points
-    """
-    kwargs = {"linestyle": ""} | kwargs
-    xx = np.ones((number_of_points, 2)) * np.nan
-    for ii in range(number_of_points):
-        x = pylab.ginput(1)
-        if len(x) == 0:
-            break
-        x = np.asarray(x)
-        xx[ii, :] = x.flat
-        if marker is not None:
-            plt.plot(xx[: ii + 1, 0].T, xx[: ii + 1, 1].T, marker=marker, **kwargs)
-            plt.draw()
-    plt.pause(1e-3)
-    return xx
-
-
-if __name__ == "__main__" and 0:  # pragma: no cover
-    plt.figure(10)
-    plt.clf()
-    plt.plot([0, 1, 2, 3], [0, 3, 1, 3], ".-")
-    plt.draw()
-    x = ginput(7)
-
-
-def setWindowRectangle(
-    x: int | Sequence[int],
-    y: int | None = None,
-    w: int | None = None,
-    h: int | None = None,
-    fig: int | None = None,
-    mngr=None,
-):
-    """Position the current Matplotlib figure at the specified position
-
-    Args:
-        x: position in format (x,y,w,h)
-        y, w, h: y position, width, height
-        fig: specification of figure window. Use None for the current active window
-
-    Usage: setWindowRectangle([x, y, w, h]) or setWindowRectangle(x, y, w, h)
-    """
-    if y is None:
-        x, y, w, h = x  # type: ignore
-    if mngr is None:
-        mngr = plt.get_current_fig_manager()
-    be = matplotlib.get_backend()
-    if be == "WXAgg":
-        mngr.canvas.manager.window.SetPosition((x, y))  # ty: ignore
-        mngr.canvas.manager.window.SetSize((w, h))  # ty: ignore
-    elif be == "TkAgg":
-        _ = mngr.canvas.manager.window.wm_geometry(f"{w}x{h}x+{x}+{y}")  # type: ignore
-    elif be == "module://IPython.kernel.zmq.pylab.backend_inline":
-        pass
-    else:
-        # assume Qt canvas
-        mngr.canvas.manager.window.move(x, y)  # ty: ignore
-        mngr.canvas.manager.window.resize(w, h)  # ty: ignore
-        mngr.canvas.manager.window.setGeometry(x, y, w, h)  # ty: ignore
 
 
 def interleaved_benchmark(
@@ -736,26 +417,6 @@ def add_rich_repr(cls):
 
     cls._repr_pretty_ = _repr_pretty_rich_  # ty: ignore
     return cls
-
-
-@contextlib.contextmanager
-def logging_context(level: int = logging.INFO, logger: None | logging.Logger = None):
-    """A context manager that changes the logging level
-
-    Args:
-        level: Logging level to set in the context
-        logger: Logger to update, if None then update the default logger
-
-    """
-    if logger is None:
-        logger = logging.getLogger()
-    previous_level = logger.getEffectiveLevel()
-    logger.setLevel(level)
-
-    try:
-        yield
-    finally:
-        logger.setLevel(previous_level)
 
 
 # %%
