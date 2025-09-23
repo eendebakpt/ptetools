@@ -4,6 +4,7 @@ import unittest
 from contextlib import redirect_stdout
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 from IPython.lib.pretty import pretty
 
@@ -16,6 +17,7 @@ from ptetools.tools import (
     memory_report,
     plotLabels,
     profile_expression,
+    robust_cost_function,
     sorted_dictionary,
 )
 
@@ -83,6 +85,18 @@ def test_add_rich_repr():
 
     a = AAA()
     assert "AAA" in pretty(a)
+
+
+def test_robust_cost_function():
+    x = np.linspace(0, 2, 11)
+    methods = robust_cost_function(x, 5, "show")
+    for method in methods:
+        _ = robust_cost_function(x, "auto", method=method)
+
+    x = np.array([0, 0.1, 0.5, 1])
+    np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "L1"), [0.0, 0.1, 0.5, 0.5])
+    np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "L2"), [0.0, 0.01, 0.25, 0.5])
+    np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "cauchy"), [0.0, 0.03922071, 0.69314718, 1.60943791])
 
 
 if __name__ == "__main__":
