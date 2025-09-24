@@ -12,7 +12,7 @@ from ptetools.optimization import AverageDecreaseTermination, OptimizerCallback
 
 class TestOptimizationUtilities(unittest.TestCase):
     def test_OptimizerCallback(self):
-        rng = default_rng()
+        rng = default_rng(123)
 
         def rosen(params, a=1, b=100, noise=0):
             """Rosenbrock function"""
