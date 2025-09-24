@@ -5,16 +5,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas
 import scipy.optimize
+from numpy.random import default_rng
 
 from ptetools.optimization import AverageDecreaseTermination, OptimizerCallback
 
 
 class TestOptimizationUtilities(unittest.TestCase):
     def test_OptimizerCallback(self):
+        rng = default_rng(123)
+
         def rosen(params, a=1, b=100, noise=0):
             """Rosenbrock function"""
             v = (a - params[0]) ** 2 + b * (params[1] - params[0] ** 2) ** 2
-            v += noise * (np.random.rand() - 0.5)
+            v += noise * (rng.random() - 0.5)
             return v
 
         def objective(x):
