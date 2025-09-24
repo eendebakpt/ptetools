@@ -30,6 +30,7 @@ class TestQiskit(unittest.TestCase):
 
     def test_random_clifford_circuit(self):
         c, index = random_clifford_circuit(1)
+        assert isinstance(index, int)
         assert c.num_qubits == 1
         c, index = random_clifford_circuit(2)
         assert c.num_qubits == 2

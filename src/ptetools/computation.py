@@ -32,7 +32,9 @@ def parallel_execute(
     def execution_method(block, **kwargs):
         return [method(**data[i]) for i in range(*block)]
 
-    parjob = Parallel(n_jobs=5, return_as="generator")(delayed(execution_method)(block=block) for block in (blocks))
+    parjob = Parallel(n_jobs=n_jobs, return_as="generator")(
+        delayed(execution_method)(block=block) for block in (blocks)
+    )
     if progress_bar:
         results = list(tqdm(parjob, total=len(blocks), desc=progress_bar))
     else:
