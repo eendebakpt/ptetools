@@ -1,198 +1,4 @@
-import contextlib
-import logging
-import os
-import tempfile
-import time
-from collections.abc import Callable, Sequence
-from itertools import chain
-from types import TracebackType
-from typing import Any, Literal
-
-import matplotlib
-import matplotlib.figure
-import matplotlib.pylab as pylab
-import matplotlib.pyplot as plt
-import numpy as np
-from termcolor import colored
-
-
-def is_spyder_environment() -> bool:
-    """Return True if the process is running in a Spyder environment"""
-    return "SPY_TESTING" in os.environ
-
-
-if is_spyder_environment():
-    pass
-else:
-    pass
-
-
-def fmt_dict(d: dict[Any, Any], fmt: str = "{:.2f}", *, key_fmt: str = "{}", add_braces: bool = True) -> str:
-    """Format dictionary keys and values"""
-    body = ", ".join([f"{key_fmt.format(k)}: {fmt.format(v)}" for k, v in d.items()])
-    if add_braces:
-        return "{" + body + "}"
-    else:
-        return body
-
-
-def array2latex(
-    X,
-    header: bool = True,
-    hlines=(),
-    floatfmt: str = "%g",
-    comment: str | None = None,
-    hlinespace: None | float = None,
-    mode: Literal["tabular", "psmallmatrix", "pmatrix"] = "tabular",
-    tabchar: str = "c",
-) -> str:
-    """Convert numpy array to Latex tabular or matrix"""
-    ss = ""
-    if comment is not None:
-        if isinstance(comment, list):
-            for line in comment:
-                ss += f"% {str(line)}\n"
-        else:
-            ss += f"% {str(comment)}\n"
-    if header:
-        match mode:
-            case "tabular":
-                if len(tabchar) == 1:
-                    cc = tabchar * X.shape[1]
-                else:
-                    cc = tabchar + tabchar[-1] * (X.shape[1] - len(tabchar))
-                ss += f"\\begin{{tabular}}{{{cc}}}" + chr(10)
-            case "psmallmatrix":
-                ss += "\\begin{psmallmatrix}" + chr(10)
-            case "pmatrix":
-                ss += "\\begin{pmatrix}" + chr(10)
-            case _:
-                raise ValueError(f"mode {mode} is invalid")
-    for ii in range(X.shape[0]):
-        r = X[ii, :]
-        if isinstance(r[0], str):
-            ss += " & ".join([f"{x}" for x in r])
-        else:
-            ss += " & ".join([floatfmt % x for x in r])
-        if ii < (X.shape[0]) - 1 or not header:
-            ss += "  \\\\" + chr(10)
-        else:
-            ss += "  " + chr(10)
-        if ii in hlines:
-            ss += r"\hline" + chr(10)
-            if hlinespace is not None:
-                ss += f"\\rule[+{hlinespace:.2f}ex]{{0pt}}{{0pt}}"
-    if header:
-        match mode:
-            case "tabular":
-                ss += "\\end{tabular}"
-            case "psmallmatrix":
-                ss += "\\end{psmallmatrix}" + chr(10)
-            case "pmatrix":
-                ss += "\\end{pmatrix}" + chr(10)
-            case _:
-                raise ValueError(f"mode {mode} is invalid")
-    return ss
-
-
-def flatten(lst: Sequence[Any]) -> list[Any]:
-    """Flatten a sequence.
-
-    Args:
-        lst : Sequence to be flattened.
-
-    Returns:
-        list: flattened list.
-
-    Example:
-        >>> flatten([ [1,2], [3,4], [10] ])
-        [1, 2, 3, 4, 10]
-    """
-    return list(chain(*lst))
-
-
-def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
-    """Create blocks of specified size"""
-    number_of_blocks = (size + block_size - 1) // block_size
-    blocks = [(ii * block_size, min(size, (ii + 1) * block_size)) for ii in range(number_of_blocks)]
-    return blocks
-
-
-def sorted_dictionary(d: dict[Any, Any], *, key: Callable | None = None) -> dict[Any, Any]:
-    """Sort keys of a dictionary"""
-    return {k: d[k] for k in sorted(d, key=key)}
-
-
-def cprint(s: str, color: str = "cyan", *args: Any, **kwargs: Any):
-    """Colored print of string"""
-    print(colored(s, color=color), *args, **kwargs)
-
-
-def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
-    """Plot labels next to points
-
-    Args:
-        xx (2xN array): Positions to plot the labels
-        labels: Labels to plot
-        *kwargs: arguments past to plotting function
-    Example:
-    >>> points = np.random.rand(2, 10)
-    >>> fig=plt.figure(10); plt.clf()
-    >>> _ = plotPoints(points, '.'); _ = plotLabels(points)
-    """
-
-    points = np.asarray(points)
-    if len(points.shape) == 1 and points.shape[0] == 2:
-        points = points.reshape((2, 1))
-    npoints = points.shape[1]
-
-    if labels is None:
-        lbl: Sequence[str] = [f"{i}" for i in range(npoints)]
-    else:
-        lbl = labels
-        if isinstance(lbl, int):
-            lbl = [str(lbl)]
-        elif isinstance(lbl, str):
-            lbl = [str(lbl)]
-    ax = plt.gca()
-    th: list[Any] = [None] * npoints
-    for ii in range(npoints):
-        lbltxt = str(lbl[ii])
-        th[ii] = ax.annotate(lbltxt, points[:, ii], **kwargs)
-    return th
-
-
-def memory_report(
-    maximum_number_to_show: int = 24, minimal_number_of_instances: int = 100, verbose: bool = True
-) -> dict[str, int]:
-    """Show information about objects with most occurences in memory
-
-    For a more detailed analysis: check the heapy package (https://github.com/zhuyifei1999/guppy3/)
-    """
-    import gc
-    import operator
-
-    rr: dict = {}
-    for obj in gc.get_objects():
-        tt = type(obj)
-        rr[tt] = rr.get(tt, 0) + 1
-
-    rr_many = {key: number for key, number in rr.items() if number > minimal_number_of_instances}
-    rr_many = {key: value for key, value in sorted(rr_many.items(), key=operator.itemgetter(1), reverse=True)}
-
-    keys = list(rr_many.keys())
-    results = {str(key): rr_many[key] for key in keys[:maximum_number_to_show]}
-    if verbose:
-        print("memory report:")
-    for key, nn in results.items():
-        if nn > 2000:
-            if verbose:
-                print(f"{key}: {nn}")
-
-    return results
-
-
-""" Code below is derived from QTT
+"""Code below is derived from QTT
 
 Copyright 2023 QuTech (TNO, TU Delft)
 
@@ -216,8 +22,25 @@ SOFTWARE.
 
 """
 
+import contextlib
+import logging
+import os
+import tempfile
+import time
+from collections.abc import Callable, Sequence
+from types import TracebackType
+from typing import Any, Literal
 
-def robust_cost_function(x: np.ndarray, thr: None | float | str, method: str = "L1") -> np.ndarray | list[str]:
+import matplotlib
+import matplotlib.figure
+import matplotlib.pylab as pylab
+import matplotlib.pyplot as plt
+import numpy as np
+
+FloatArray = np.typing.NDArray[np.float64]
+
+
+def robust_cost_function(x: FloatArray, thr: None | float | str, method: str = "L1") -> FloatArray | list[str]:
     """Robust cost function
 
     For details see "Multiple View Geometry in Computer Vision, Second Edition", Hartley and Zisserman, 2004
@@ -296,7 +119,7 @@ def robust_cost_function(x: np.ndarray, thr: None | float | str, method: str = "
         plt.legend()
         return method_names
     else:
-        raise Exception(f"no such method {method}")
+        raise ValueError(f"no such method {method}")
     return y
 
 
@@ -405,10 +228,7 @@ def tilefigs(
         iy = int(np.floor(float(iim) / geometry[0]))
         x: int = int(ww[0]) + int(ix * w)  # type: ignore
         y: int = int(ww[1]) + int(iy * h)  # type: ignore
-        if be == "WXAgg":
-            fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
-            fig.canvas.manager.window.SetSize((w, h))  # type: ignore
-        elif be == "WX":
+        if be == "WXAgg" or be == "WX":
             fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
             fig.canvas.manager.window.SetSize((w, h))  # type: ignore
         elif be == "agg":
@@ -417,8 +237,6 @@ def tilefigs(
         elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg", "qtagg"):
             # assume Qt canvas
             try:
-                # fig.canvas.manager.window.move(x, y+y_offset)  # type: ignore
-                # fig.canvas.manager.window.resize(int(w), int(h))  # type: ignore
                 fig.canvas.manager.window.setGeometry(x, y + y_offset, int(w), int(h))  # type: ignore
             except Exception as e:
                 print(
@@ -627,6 +445,9 @@ def setWindowRectangle(
 
     Usage: setWindowRectangle([x, y, w, h]) or setWindowRectangle(x, y, w, h)
     """
+    if isinstance(fig, int):
+        plt.figure(fig)
+
     if y is None:
         x, y, w, h = x  # type: ignore
     if mngr is None:

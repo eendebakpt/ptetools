@@ -1,4 +1,6 @@
+import gc
 import math
+import operator
 import os
 import tempfile
 import time
@@ -26,12 +28,6 @@ from ptetools._qtt import (  # noqa
 def is_spyder_environment() -> bool:
     """Return True if the process is running in a Spyder environment"""
     return "SPY_TESTING" in os.environ
-
-
-if is_spyder_environment():
-    pass
-else:
-    pass
 
 
 def fmt_dict(d: dict[Any, Any], fmt: str = "{:.2f}", *, key_fmt: str = "{}", add_braces: bool = True) -> str:
@@ -157,9 +153,7 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
         lbl: Sequence[str] = [f"{i}" for i in range(npoints)]
     else:
         lbl = labels
-        if isinstance(lbl, int):
-            lbl = [str(lbl)]
-        elif isinstance(lbl, str):
+        if isinstance(lbl, (int, str)):
             lbl = [str(lbl)]
     ax = plt.gca()
     th: list[Any] = [None] * npoints
@@ -176,8 +170,6 @@ def memory_report(
 
     For a more detailed analysis: check the heapy package (https://github.com/zhuyifei1999/guppy3/)
     """
-    import gc
-    import operator
 
     rr: dict = {}
     for obj in gc.get_objects():
@@ -185,16 +177,15 @@ def memory_report(
         rr[tt] = rr.get(tt, 0) + 1
 
     rr_many = {key: number for key, number in rr.items() if number > minimal_number_of_instances}
-    rr_many = {key: value for key, value in sorted(rr_many.items(), key=operator.itemgetter(1), reverse=True)}
+    rr_many = dict(sorted(rr_many.items(), key=operator.itemgetter(1), reverse=True))
 
     keys = list(rr_many.keys())
     results = {str(key): rr_many[key] for key in keys[:maximum_number_to_show]}
     if verbose:
         print("memory report:")
     for key, nn in results.items():
-        if nn > 2000:
-            if verbose:
-                print(f"{key}: {nn}")
+        if nn > 2000 and verbose:
+            print(f"{key}: {nn}")
 
     return results
 

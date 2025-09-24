@@ -6,8 +6,8 @@ from ptetools.qi import qi_counts2qiskit, report_qi_status
 
 
 class TestQi(unittest.TestCase):
+    @unittest.skip("Needs authentication")
     def test_report_qi_status(self):
-        return  # test not enabled
         with redirect_stdout(io.StringIO()) as s:
             report_qi_status()
         assert "QI backends" in s.getvalue()

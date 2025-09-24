@@ -35,7 +35,7 @@ class TestTools(unittest.TestCase):
             self.assertIsInstance(m.current_delta_time, float)
             self.assertTrue(m.current_delta_time >= 0, "current time must always be positive")
 
-    def sorted_dictionary(self):
+    def test_sorted_dictionary(self):
         d = sorted_dictionary({"b": 0, "a": 2})
         assert str(d) == "{'a': 2, 'b': 0}"
 
