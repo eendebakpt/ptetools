@@ -424,6 +424,7 @@ class ReprPrettyTester:
         self.txt += v
 
     def _repr_pretty_(self, p: Any, cycle: bool) -> None:
+        del cycle
         p.text(f"{self.__class__.__name__}: {self.txt}")
 
 

@@ -80,46 +80,47 @@ def robust_cost_function(x: FloatArray, thr: None | float | str, method: str = "
 
     assert not isinstance(thr, str)
 
-    if method == "L1":
-        y = np.minimum(np.abs(x), thr)
-    elif method == "L2" or method == "square":
-        y = np.minimum(x * x, thr)
-    elif method == "BZ":
-        alpha = thr * thr
-        epsilon = np.exp(-alpha)
-        y = -np.log(np.exp(-x * x) + epsilon)
-    elif method == "BZ0":
-        alpha = thr * thr
-        epsilon = np.exp(-alpha)
-        y = -np.log(np.exp(-x * x) + epsilon) + np.log(1 + epsilon)
-    elif method == "cauchy":
-        b2 = thr * thr
-        d2 = x * x
-        y = np.log(1 + d2 / b2)
-    elif method == "cg":
-        delta = x
-        delta2 = delta * delta
-        w = 1.0 / thr  # ratio of std.dev
-        w2 = w * w
-        A = 0.1  # fraction of outliers
-        y = -np.log(A * np.exp(-delta2) + (1 - A) * np.exp(-delta2 / w2) / w)
-        y = y + np.log(A + (1 - A) * 1 / w)
-    elif method == "huber":
-        d2 = x * x
-        d = 2 * thr * np.abs(x) - thr * thr
-        y = d2
-        idx = np.abs(y) >= thr * thr
-        y[idx] = d[idx]
-    elif method == "show":
-        plt.figure(10)
-        plt.clf()
-        method_names = ["L1", "L2", "BZ", "cauchy", "huber", "cg"]
-        for m in method_names:
-            plt.plot(x, robust_cost_function(x, thr, m), label=m)
-        plt.legend()
-        return method_names
-    else:
-        raise ValueError(f"no such method {method}")
+    match method:
+        case "L1":
+            y = np.minimum(np.abs(x), thr)
+        case "L2" | "square":
+            y = np.minimum(x * x, thr)
+        case "BZ":
+            alpha = thr * thr
+            epsilon = np.exp(-alpha)
+            y = -np.log(np.exp(-x * x) + epsilon)
+        case "BZ0":
+            alpha = thr * thr
+            epsilon = np.exp(-alpha)
+            y = -np.log(np.exp(-x * x) + epsilon) + np.log(1 + epsilon)
+        case "cauchy":
+            b2 = thr * thr
+            d2 = x * x
+            y = np.log(1 + d2 / b2)
+        case "cg":
+            delta = x
+            delta2 = delta * delta
+            w = 1.0 / thr  # ratio of std.dev
+            w2 = w * w
+            A = 0.1  # fraction of outliers
+            y = -np.log(A * np.exp(-delta2) + (1 - A) * np.exp(-delta2 / w2) / w)
+            y = y + np.log(A + (1 - A) * 1 / w)
+        case "huber":
+            d2 = x * x
+            d = 2 * thr * np.abs(x) - thr * thr
+            y = d2
+            idx = np.abs(y) >= thr * thr
+            y[idx] = d[idx]
+        case "show":
+            plt.figure(10)
+            plt.clf()
+            method_names = ["L1", "L2", "BZ", "cauchy", "huber", "cg"]
+            for m in method_names:
+                plt.plot(x, robust_cost_function(x, thr, m), label=m)
+            plt.legend()
+            return method_names
+        case _:
+            raise ValueError(f"no such method {method}")
     return y
 
 
