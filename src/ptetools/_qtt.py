@@ -119,7 +119,7 @@ def robust_cost_function(x: FloatArray, thr: None | float | str, method: str = "
         plt.legend()
         return method_names
     else:
-        raise Exception(f"no such method {method}")
+        raise ValueError(f"no such method {method}")
     return y
 
 
