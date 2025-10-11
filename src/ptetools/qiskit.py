@@ -95,6 +95,13 @@ def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType
     return sorted_dictionary({k: v / total for k, v in counts.items()})  # ty: ignore
 
 
+def normalize_probability(probabilities: FloatArray) -> FloatArray:
+    """Normalize probabilties to have sum 1 and in interval [0, 1]"""
+    w = np.minimum(np.maximum(probabilities, 0.0), 1.0)
+    w = w / np.sum(w)
+    return w
+
+
 def counts2dense(c: CountsType, number_of_bits: int) -> np.ndarray:
     """Convert dictionary with fractions or counts to a dense array"""
     d = np.zeros(2**number_of_bits, dtype=np.array(sum(c.values())).dtype)

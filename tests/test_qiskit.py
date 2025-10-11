@@ -11,6 +11,7 @@ from ptetools.qiskit import (
     counts2fractions,
     fractions2counts,
     largest_remainder_rounding,
+    normalize_probability,
     random_clifford_circuit,
 )
 
@@ -79,6 +80,11 @@ class TestQiskit(unittest.TestCase):
         x = circuit2matrix(c)
         expected = np.array([[0.0 + 0.0j, 1.0 + 0.0j], [1.0 + 0.0j, 0.0 + 0.0j]])
         np.testing.assert_array_equal(x, expected)
+
+    def test_normalize_probability(self):
+        np.testing.assert_array_equal(normalize_probability([0, 0.99]), [0, 1])
+        np.testing.assert_array_equal(normalize_probability([-0.01, 1.0099]), [0, 1])
+        assert sum(normalize_probability([1.2342, 123.321, -0.001])) == 1
 
 
 if __name__ == "__main__":
