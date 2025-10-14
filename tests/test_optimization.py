@@ -7,10 +7,15 @@ import pandas
 import scipy.optimize
 from numpy.random import default_rng
 
-from ptetools.optimization import AverageDecreaseTermination, OptimizerCallback
+from ptetools.optimization import AverageDecreaseTermination, OptimizerCallback, OptimizerLog
 
 
 class TestOptimizationUtilities(unittest.TestCase):
+    def test_OptimizerLog(self):
+        log = OptimizerLog([], [])
+        log.plot()
+        plt.close("all")
+
     def test_OptimizerCallback(self):
         rng = default_rng(123)
 

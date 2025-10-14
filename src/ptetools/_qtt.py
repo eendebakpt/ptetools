@@ -160,8 +160,8 @@ def static_var(variable_name: str, value: Any) -> Callable:
     return static_variable_decorator
 
 
-@static_var("monitorindex", -1)
-def tilefigs(  # pragma: no cover
+@static_var("monitorindex", -1)  # pragma: no cover
+def tilefigs(
     lst: list[int | plt.Figure],
     geometry: Sequence[int] | None = None,
     ww: tuple[int] | list[int] | None = None,

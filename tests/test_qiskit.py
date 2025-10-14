@@ -4,6 +4,7 @@ import numpy as np
 from qiskit.circuit import QuantumCircuit
 
 from ptetools.qiskit import (
+    ModifyDelayGate,
     RemoveGateByName,
     RemoveZeroDelayGate,
     circuit2matrix,
@@ -22,6 +23,14 @@ def circuit_instruction_names(qc):
 
 
 class TestQiskit(unittest.TestCase):
+    def test_ModifyDelayGate(self):
+        time_unit = 20e-9
+        qc = QuantumCircuit(1)
+        qc.delay(duration=6.1 * time_unit, unit="s")
+        p = ModifyDelayGate(dt=time_unit, round=True)
+        qc = p(qc)
+        assert list(qc)[0].operation.duration == 6
+
     def test_dense2sparse(self):
         assert dense2sparse([1, 2]) == {"0": 1, "1": 2}
         assert dense2sparse([1, 2, 3, 4]) == {"00": 1, "01": 2, "10": 3, "11": 4}

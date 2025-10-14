@@ -38,7 +38,7 @@ class OptimizerLog:
     values: list
     parameters: list
 
-    def update(self, count, parameters, mean, _metadata):
+    def update(self, count, parameters, mean, _metadata):  # pragma: no cover
         self.values.append(mean)
         self.parameters.append(parameters)
         print(f"Running circuit {count}: mean {mean:.2f}", end="\r\n", flush=True)
@@ -52,9 +52,6 @@ class OptimizerLog:
             ax = plt.gca()
         # Plot energy and reference value
         ax.plot(self.values, label="Cost")
-
-        # best_value
-        # plt.axhline(y=-best_value, color="tab:red", ls="--", label="Target")
 
         ax.legend(loc="best")
         ax.set_xlabel("Iteration")
@@ -229,7 +226,7 @@ class OptimizerCallback:
             print(f"#{number_evaluations}, {parameters}, {value}, {stepsize}, {accepted}")
         self.data_callback(number_evaluations, parameters, value)
 
-    def lmfit_callback(self, parameters, iteration, residual, *args, **kws):
+    def lmfit_callback(self, parameters, iteration, residual, *args, **kws):  # pragma: no cover
         """Callback method for lmfit optimizers"""
         if self._residual_fitting:
             residual = np.linalg.norm(residual)
