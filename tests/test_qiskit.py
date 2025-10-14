@@ -9,6 +9,7 @@ from ptetools.qiskit import (
     circuit2matrix,
     counts2dense,
     counts2fractions,
+    dense2sparse,
     fractions2counts,
     largest_remainder_rounding,
     normalize_probability,
@@ -21,6 +22,10 @@ def circuit_instruction_names(qc):
 
 
 class TestQiskit(unittest.TestCase):
+    def test_dense2sparse(self):
+        assert dense2sparse([1, 2]) == {"0": 1, "1": 2}
+        assert dense2sparse([1, 2, 3, 4]) == {"00": 1, "01": 2, "10": 3, "11": 4}
+
     def test_counts2dense(self):
         np.testing.assert_array_equal(counts2dense({"1": 100}, number_of_bits=1), np.array([0, 100]))
         np.testing.assert_array_equal(counts2dense({"1": 100}, number_of_bits=2), np.array([0, 100, 0, 0]))

@@ -76,13 +76,13 @@ notes = ["FIXME", "TODO"]
 
 
 [tool.coverage.run]
-source = ["./src/ptools"]
-command_line = "-m pytest --junitxml=report.xml tests"
+source = ["./src/ptetools"]
+command_line = "-m pytest tests"
 omit = []
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 80
+fail_under = 85
 
 [tool.ruff]
 src = ["src"]

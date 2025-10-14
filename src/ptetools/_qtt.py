@@ -24,8 +24,6 @@ SOFTWARE.
 
 import contextlib
 import logging
-import os
-import tempfile
 import time
 from collections.abc import Callable, Sequence
 from types import TracebackType
@@ -124,7 +122,7 @@ def robust_cost_function(x: FloatArray, thr: None | float | str, method: str = "
     return y
 
 
-def monitorSizes(verbose: int = 0) -> list[tuple[int]]:
+def monitorSizes(verbose: int = 0) -> list[tuple[int]]:  # pragma: no cover
     """Return monitor sizes
 
     Args:
@@ -163,7 +161,7 @@ def static_var(variable_name: str, value: Any) -> Callable:
 
 
 @static_var("monitorindex", -1)
-def tilefigs(
+def tilefigs(  # pragma: no cover
     lst: list[int | plt.Figure],
     geometry: Sequence[int] | None = None,
     ww: tuple[int] | list[int] | None = None,
@@ -347,51 +345,6 @@ class attribute_context:
 
 
 # %%
-def profile_expression(expression: str, N: int | None = 1, gui: None | str = "snakeviz") -> tuple[str, Any]:
-    """Profile an expression with cProfile and display the results using snakeviz
-
-    Args:
-        expression: Code to be profiled
-        N: Number of iterations. If None, then automatically determine a suitable number of iterations
-        gui: Can be `tuna` or `snakeviz`
-    Returns:
-        Tuple with the filename of the profiling results and a handle to the subprocess starting the GUI
-    """
-    import cProfile  # lazy import
-    import subprocess
-
-    tmpdir = tempfile.mkdtemp()
-    statsfile = os.path.join(tmpdir, "profile_expression_stats")
-
-    assert isinstance(expression, str), "expression should be a string"
-
-    if N is None:
-        t0 = time.perf_counter()
-        cProfile.run(expression, filename=statsfile)
-        dt = time.perf_counter() - t0
-        N = int(1.0 / max(dt - 0.6e-3, 1e-6))
-        if N <= 1:
-            print(f"profiling: 1 iteration, {dt:.2f} [s]")
-            r = subprocess.Popen([gui, statsfile])
-            return statsfile, r
-    else:
-        N = int(N)
-    print(f"profile_expression: running {N} loops")
-    if N > 1:
-        loop_expression = f"for ijk_kji_no_name in range({N}):\n"
-        loop_expression += "\n".join(["  " + term for term in expression.split("\n")])
-        loop_expression += "\n# loop done"
-        expression = loop_expression
-    t0 = time.perf_counter()
-    cProfile.run(expression, statsfile)
-    dt = time.perf_counter() - t0
-
-    print(f"profiling: {N} iterations, {dt:.2f} [s]")
-    if gui is not None:
-        r = subprocess.Popen([gui, statsfile])
-    else:
-        r = None
-    return statsfile, r
 
 
 def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs):  # pragma: no cover
@@ -429,7 +382,7 @@ if __name__ == "__main__" and 0:  # pragma: no cover
     x = ginput(7)
 
 
-def setWindowRectangle(
+def setWindowRectangle(  # pragma: no cover
     x: int | Sequence[int],
     y: int | None = None,
     w: int | None = None,

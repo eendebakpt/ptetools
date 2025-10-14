@@ -12,7 +12,7 @@ def fnamedtuple(*args: Any, **kwargs: Any):
     return add_rich_repr(n)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     from IPython.lib.pretty import pretty
 
     Point = fnamedtuple("Point", ["x", "y"])
