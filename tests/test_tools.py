@@ -104,8 +104,7 @@ class TestTools(unittest.TestCase):
 
     def test_interleaved_benchmark(self):
         def method():
-            for ii in range(10):
-                pass
+            return list(range(4))
 
         with redirect_stdout(io.StringIO()) as f:
             _ = interleaved_benchmark(method, method)

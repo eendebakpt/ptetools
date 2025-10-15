@@ -37,4 +37,6 @@ jobs:
         python -m pip install .
     - name: Test with pytest
       run: |
-        coverage run && coverage report -m
+        python -m pip install -e .
+        coverage run
+        coverage report -m
