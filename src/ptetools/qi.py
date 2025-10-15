@@ -1,13 +1,7 @@
+# pragma: no cover
+
 import datetime
 from typing import Any
-
-try:
-    from quantuminspire.credentials import get_token_authentication, load_account  # ty: ignore
-    from quantuminspire.qiskit import QI  # ty: ignore
-except ImportError:
-    import warnings
-
-    warnings.warn("could not import quantuminspire. install it via pip install quanuminspire")
 
 
 def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | None = None) -> Any:  # pragma: no cover
@@ -18,6 +12,9 @@ def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | Non
     Returns:
         Tuple with backend name and backend
     """
+    from quantuminspire.credentials import get_token_authentication, load_account  # ty: ignore
+    from quantuminspire.qiskit import QI  # ty: ignore
+
     authentication = get_token_authentication(load_account())
 
     QI.set_authentication(authentication)
@@ -39,7 +36,7 @@ def qi_counts2qiskit(counts: dict[str, int], num_bits: int) -> dict[str, int]:
     return {convert(k): v for k, v in counts.items()}
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     from qiskit.result import marginal_counts
 
     mm = [{"0x0": 8182, "0x4": 10}, {"0x0": 4137, "0x4": 4055}, {"0x0": 263, "0x4": 7929}]

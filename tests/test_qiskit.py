@@ -4,13 +4,16 @@ import numpy as np
 from qiskit.circuit import QuantumCircuit
 
 from ptetools.qiskit import (
+    ModifyDelayGate,
     RemoveGateByName,
     RemoveZeroDelayGate,
     circuit2matrix,
     counts2dense,
     counts2fractions,
+    dense2sparse,
     fractions2counts,
     largest_remainder_rounding,
+    normalize_probability,
     random_clifford_circuit,
 )
 
@@ -20,6 +23,18 @@ def circuit_instruction_names(qc):
 
 
 class TestQiskit(unittest.TestCase):
+    def test_ModifyDelayGate(self):
+        time_unit = 20e-9
+        qc = QuantumCircuit(1)
+        qc.delay(duration=6.1 * time_unit, unit="s")
+        p = ModifyDelayGate(dt=time_unit, round=True)
+        qc = p(qc)
+        assert list(qc)[0].operation.duration == 6
+
+    def test_dense2sparse(self):
+        assert dense2sparse([1, 2]) == {"0": 1, "1": 2}
+        assert dense2sparse([1, 2, 3, 4]) == {"00": 1, "01": 2, "10": 3, "11": 4}
+
     def test_counts2dense(self):
         np.testing.assert_array_equal(counts2dense({"1": 100}, number_of_bits=1), np.array([0, 100]))
         np.testing.assert_array_equal(counts2dense({"1": 100}, number_of_bits=2), np.array([0, 100, 0, 0]))
@@ -79,6 +94,11 @@ class TestQiskit(unittest.TestCase):
         x = circuit2matrix(c)
         expected = np.array([[0.0 + 0.0j, 1.0 + 0.0j], [1.0 + 0.0j, 0.0 + 0.0j]])
         np.testing.assert_array_equal(x, expected)
+
+    def test_normalize_probability(self):
+        np.testing.assert_array_equal(normalize_probability([0, 0.99]), [0, 1])
+        np.testing.assert_array_equal(normalize_probability([-0.01, 1.0099]), [0, 1])
+        assert sum(normalize_probability([1.2342, 123.321, -0.001])) == 1
 
 
 if __name__ == "__main__":

@@ -72,7 +72,7 @@ def fractions2counts(f: list[CountsType] | CountsType, number_of_shots: int) -> 
     return [f2c(x, number_of_shots) for x in f]
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     number_set = np.array([20.2, 20.2, 20.2, 20.2, 19.2]) / 100
     r = largest_remainder_rounding(number_set, 100)
     np.testing.assert_array_equal(r, [21, 20, 20, 20, 19])
@@ -95,6 +95,13 @@ def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType
     return sorted_dictionary({k: v / total for k, v in counts.items()})  # ty: ignore
 
 
+def normalize_probability(probabilities: FloatArray) -> FloatArray:
+    """Normalize probabilties to have sum 1 and in interval [0, 1]"""
+    w = np.minimum(np.maximum(probabilities, 0.0), 1.0)
+    w = w / np.sum(w)
+    return w
+
+
 def counts2dense(c: CountsType, number_of_bits: int) -> np.ndarray:
     """Convert dictionary with fractions or counts to a dense array"""
     d = np.zeros(2**number_of_bits, dtype=np.array(sum(c.values())).dtype)
@@ -114,7 +121,7 @@ def dense2sparse(d: IntArray) -> CountsType:
     return counts
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     print(counts2dense({"1 0": 1.0}, 2))
     print(counts2fractions({"11": 20, "00": 30}))
     print(counts2fractions([{"11": 20, "00": 30}]))
@@ -201,7 +208,7 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
         return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     from qiskit.transpiler import PassManager
 
     qc = QuantumCircuit(2)
@@ -245,12 +252,7 @@ class ModifyDelayGate(TransformationPass):  # type: ignore
     """Return a circuit with small rotation gates removed."""
 
     def __init__(self, dt: float = 20e-9, round: bool = True) -> None:
-        """Change delay gates to specified time step
-
-        Args:
-            epsilon: Threshold for rotation angle to be removed
-            modulo2pi: If True, then rotations multiples of 2pi are removed as well
-        """
+        """Change delay gates to specified time unit"""
         super().__init__()
 
         self.round = round
@@ -273,7 +275,7 @@ class ModifyDelayGate(TransformationPass):  # type: ignore
         return dag
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     qc = QuantumCircuit(1)
     qc.delay(duration=123e-9, unit="s")
     p = ModifyDelayGate(dt=20e-9, round=True)

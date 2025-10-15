@@ -50,6 +50,8 @@ def array2latex(
     tabchar: str = "c",
 ) -> str:
     """Convert numpy array to Latex tabular or matrix"""
+    X = np.asarray(X)
+    assert len(X.shape) == 2, "input should be a 2-dimensional array"
     ss = ""
     if comment is not None:
         if isinstance(comment, list):
@@ -213,7 +215,7 @@ def profile_expression(expression: str, N: int | None = 1, gui: None | str = "sn
         cProfile.run(expression, filename=statsfile)
         dt = time.perf_counter() - t0
         N = int(1.0 / max(dt - 0.6e-3, 1e-6))
-        if N <= 1:
+        if N <= 1:  # pragma: no cover
             print(f"profiling: 1 iteration, {dt:.2f} [s]")
             r = subprocess.Popen([gui, statsfile])
             return statsfile, r
@@ -291,7 +293,7 @@ def interleaved_benchmark(
                 for _ in repeat(None, blocksize):
                     func2(*args, **kwargs)
                 dt2 += time.perf_counter() - t0
-        else:
+        else:  # pragma: no cover
             for ii in range(number_of_iterations):
                 t0 = time.perf_counter()
                 func(*args, **kwargs)
@@ -313,7 +315,7 @@ def interleaved_benchmark(
                     for _ in repeat(None, blocksize):
                         func2()
                     dt2 += time.perf_counter() - t0
-            else:
+            else:  # pragma: no cover
                 for ii in range(number_of_iterations):
                     t0 = time.perf_counter()
                     func()
@@ -336,7 +338,7 @@ def interleaved_benchmark(
                     for _ in repeat(None, blocksize):
                         func2(arg)
                     dt2 += time.perf_counter() - t0
-            else:
+            else:  # pragma: no cover
                 for ii in range(number_of_iterations):
                     t0 = time.perf_counter()
                     func(arg)
@@ -380,7 +382,7 @@ def interleaved_benchmark(
     return dt1, dt2
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
 
     def g(x):
         return x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x
@@ -428,7 +430,7 @@ class ReprPrettyTester:
         p.text(f"{self.__class__.__name__}: {self.txt}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     from dataclasses import dataclass
 
     @add_rich_repr
