@@ -1,9 +1,11 @@
 [build-system]
-requires = [
-    "setuptools >= 42",
-    "wheel",
-]
-build-backend = "setuptools.build_meta"
+#requires = [
+#    "setuptools >= 42",
+#    "wheel",
+#]
+#build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.9.3"]
+build-backend = "uv_build"
 
 [project]
 name = "ptetools"
@@ -30,7 +32,8 @@ classifiers = [
 ]
 keywords = [
 ]
-dynamic = ["version"]
+version = "0.1.17"
+#dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
     "numpy >= 2.2",
@@ -90,11 +93,11 @@ lint.select = ["E", "F", "UP", "I"]
 lint.ignore = [ "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`, ignore for performance
            "E712" # https://github.com/astral-sh/ruff/issues/4560
         ]
+
+lint.per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
 line-length = 120
 target-version = "py310"
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
-
-lint.per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
 
 
 [tool.mypy]
