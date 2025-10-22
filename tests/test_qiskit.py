@@ -12,14 +12,45 @@ from ptetools.qiskit import (
     counts2fractions,
     dense2sparse,
     fractions2counts,
+    invert_permutation,
     largest_remainder_rounding,
     normalize_probability,
+    permute_bits,
+    permute_counts,
+    permute_string,
     random_clifford_circuit,
 )
 
 
 def circuit_instruction_names(qc):
     return [i.operation.name for i in qc]
+
+
+class TestBitConversions(unittest.TestCase):
+    def test_permute_bits(self):
+        permutation = [0, 1, 3, 2]
+        assert permute_bits(idx=0, permutation=permutation) == 0
+        assert permute_bits(idx=1, permutation=permutation) == 1
+        assert permute_bits(idx=2, permutation=permutation) == 2
+        assert permute_bits(idx=4, permutation=permutation) == 8
+
+        assert permute_bits(idx=0, permutation=[1, 0]) == 0
+        assert permute_bits(idx=1, permutation=[1, 0]) == 2
+        assert permute_bits(idx=1, permutation=[1, 2, 0]) == 2
+        assert permute_bits(idx=3, permutation=[3, 4, 0, 1, 2]) == 24
+
+    def test_permute_string(self):
+        permute_string("abcd", [1, 0, 2, 3]) == "bacd"
+
+    def test_permute_counts(self):
+        assert permute_counts({"00": 10, "01": 20}, [1, 0]) == {"00": 10, "10": 20}
+
+        counts = {"1110": 945, "0010": 7, "1011": 16}
+        permutation = [1, 0, 2, 3]
+        assert permute_counts(counts, permutation) == {"1101": 945, "0001": 7, "1011": 16}
+
+    def test_invert_permutation(self):
+        np.testing.assert_array_equal(invert_permutation([0, 1, 3, 2]), np.array([0, 1, 3, 2]))
 
 
 class TestQiskit(unittest.TestCase):
@@ -32,6 +63,7 @@ class TestQiskit(unittest.TestCase):
         assert list(qc)[0].operation.duration == 6
 
     def test_dense2sparse(self):
+        assert dense2sparse([1, 0]) == {"0": 1}
         assert dense2sparse([1, 2]) == {"0": 1, "1": 2}
         assert dense2sparse([1, 2, 3, 4]) == {"00": 1, "01": 2, "10": 3, "11": 4}
 

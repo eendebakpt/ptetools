@@ -30,6 +30,74 @@ FloatArray = np.typing.NDArray[np.float64]
 ComplexArray = np.typing.NDArray[np.complex128]
 
 
+# %% Bit conversions
+def invert_permutation(permutation) -> IntArray:
+    inv = np.empty_like(permutation)
+    inv[permutation] = np.arange(len(inv), dtype=int)
+    return inv
+
+
+def bitlist_to_int(bitlist: Sequence[int]) -> int:
+    out = 0
+    for bit in bitlist:
+        out = (out << 1) | bit
+    return out
+
+
+def index2bitstring(index: int, number_of_bits: int) -> str:
+    fmt = f"{{:0{number_of_bits}b}}"
+    return fmt.format(index)
+
+
+def permute_bits(idx: int, permutation: Sequence[int]) -> int:
+    """Permute position of bits in an integer"""
+    number_of_bits = len(permutation)
+    bs_reversed = index2bitstring(idx, number_of_bits)[::-1]
+    permuted_bs = [int(bs_reversed[v]) for v in permutation][::-1]
+    pidx = bitlist_to_int(permuted_bs)
+    return pidx
+
+
+def permute_string(string: str, permutation: Sequence[int]):
+    """Permute string characters"""
+    permuted = [string[pidx] for idx, pidx in enumerate(permutation)]
+    return "".join(permuted)
+
+
+def permute_counts(counts: CountsType, permutation: Sequence[int]) -> CountsType:
+    """Permute bits in a counts for fractions object
+
+    For the bits we use the Qiskit convetion: LSB has index zero
+    """
+    return {permute_string(bitstring[::-1], permutation)[::-1]: value for bitstring, value in counts.items()}
+
+
+if __name__ == "__main__":
+    permutation = [0, 1, 3, 2]
+    print(permute_bits(idx=1, permutation=permutation))
+
+    # %%
+    permutation = [0, 1, 3, 2]
+    assert permute_bits(idx=1, permutation=permutation) == 1
+
+    assert permute_bits(idx=0, permutation=[1, 0]) == 0
+    assert permute_bits(idx=1, permutation=[1, 0]) == 2
+    assert permute_bits(idx=1, permutation=[1, 2, 0]) == 4
+    assert permute_bits(idx=3, permutation=[3, 4, 0, 1, 2]) == 12
+
+    permute_string("abcd", [1, 0, 2, 3]) == "bacd"
+
+    assert permute_counts({"00": 10, "01": 20}, [1, 0]) == {"00": 10, "10": 20}
+
+    np.testing.assert_array_equal(invert_permutation([0, 1, 3, 2]), np.array([0, 1, 3, 2]))
+
+    counts = {"1110": 945, "0010": 7, "1011": 16}
+    permutation = [1, 0, 2, 3]
+    assert permute_counts(counts, permutation) == {"1101": 945, "0001": 7, "1011": 16}
+
+# %%
+
+
 @overload
 def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]: ...
 
@@ -118,6 +186,7 @@ def dense2sparse(d: IntArray) -> CountsType:
     fmt = f"{{:0{number_of_bits}b}}"
     bb = [fmt.format(idx) for idx in range(2**number_of_bits)]
     counts = {bitstring: d[idx].item() for idx, bitstring in enumerate(bb)}
+    counts = {key: value for key, value in counts.items() if value}
     return counts
 
 
