@@ -7,6 +7,7 @@ from ptetools.qiskit import (
     ModifyDelayGate,
     RemoveGateByName,
     RemoveZeroDelayGate,
+    bitlist_to_int,
     circuit2matrix,
     counts2dense,
     counts2fractions,
@@ -36,6 +37,15 @@ class TestBitConversions(unittest.TestCase):
         assert generate_bitstrings(1) == ["0", "1"]
         assert generate_bitstrings(2) == ["00", "01", "10", "11"]
 
+    def test_bitlist_to_int(self):
+        assert bitlist_to_int([0, 1, 1]) == 3
+
+    def test_invert_permutation(self):
+        np.testing.assert_array_equal(invert_permutation([0, 1]), [0, 1])
+        np.testing.assert_array_equal(invert_permutation([1, 0]), [1, 0])
+        np.testing.assert_array_equal(invert_permutation([1, 2, 0]), [2, 0, 1])
+        np.testing.assert_array_equal(invert_permutation([0, 1, 3, 2]), np.array([0, 1, 3, 2]))
+
     def test_permute_bits(self):
         permutation = [0, 1, 3, 2]
         assert permute_bits(idx=0, permutation=permutation) == 0
@@ -45,8 +55,8 @@ class TestBitConversions(unittest.TestCase):
 
         assert permute_bits(idx=0, permutation=[1, 0]) == 0
         assert permute_bits(idx=1, permutation=[1, 0]) == 2
-        assert permute_bits(idx=1, permutation=[1, 2, 0]) == 2
-        assert permute_bits(idx=3, permutation=[3, 4, 0, 1, 2]) == 24
+        assert permute_bits(idx=1, permutation=[1, 2, 0]) == 4
+        assert permute_bits(idx=3, permutation=[3, 4, 0, 1, 2]) == 12
 
     def test_permute_string(self):
         permute_string("abcd", [1, 0, 2, 3]) == "bacd"
@@ -57,9 +67,6 @@ class TestBitConversions(unittest.TestCase):
         counts = {"1110": 945, "0010": 7, "1011": 16}
         permutation = [1, 0, 2, 3]
         assert permute_counts(counts, permutation) == {"1101": 945, "0001": 7, "1011": 16}
-
-    def test_invert_permutation(self):
-        np.testing.assert_array_equal(invert_permutation([0, 1, 3, 2]), np.array([0, 1, 3, 2]))
 
 
 class TestQiskit(unittest.TestCase):
