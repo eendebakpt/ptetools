@@ -3,7 +3,7 @@ import logging
 import pathlib
 import random
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from functools import lru_cache
 from typing import Any, overload
 
@@ -34,7 +34,7 @@ ComplexArray = np.typing.NDArray[np.complex128]
 # %% Bit conversions
 
 
-def generate_bitstring_tuples(number_of_bits: int):
+def generate_bitstring_tuples(number_of_bits: int) -> Iterator[tuple[str]]:
     return itertools.product(*((0, 1),) * (number_of_bits))
 
 
@@ -76,7 +76,7 @@ def permute_bits(idx: int, permutation: Sequence[int]) -> int:
     return pidx
 
 
-def permute_string(string: str, permutation: Sequence[int]):
+def permute_string(string: str, permutation: Sequence[int]) -> str:
     """Permute string characters"""
     permuted = [string[pidx] for idx, pidx in enumerate(permutation)]
     return "".join(permuted)
