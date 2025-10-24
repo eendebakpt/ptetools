@@ -90,11 +90,10 @@ def permute_counts(counts: CountsType, permutation: Sequence[int]) -> CountsType
     return {permute_string(bitstring[::-1], permutation)[::-1]: value for bitstring, value in counts.items()}
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     permutation = [0, 1, 3, 2]
     print(permute_bits(idx=1, permutation=permutation))
 
-    # %%
     permutation = [0, 1, 3, 2]
     assert permute_bits(idx=1, permutation=permutation) == 1
 
@@ -102,8 +101,6 @@ if __name__ == "__main__":
     assert permute_bits(idx=1, permutation=[1, 0]) == 2
     assert permute_bits(idx=1, permutation=[1, 2, 0]) == 4
     assert permute_bits(idx=3, permutation=[3, 4, 0, 1, 2]) == 12
-
-    permute_string("abcd", [1, 0, 2, 3]) == "bacd"
 
     assert permute_counts({"00": 10, "01": 20}, [1, 0]) == {"00": 10, "10": 20}
 

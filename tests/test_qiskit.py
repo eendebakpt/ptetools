@@ -59,7 +59,7 @@ class TestBitConversions(unittest.TestCase):
         assert permute_bits(idx=3, permutation=[3, 4, 0, 1, 2]) == 12
 
     def test_permute_string(self):
-        permute_string("abcd", [1, 0, 2, 3]) == "bacd"
+        assert permute_string("abcd", [1, 0, 2, 3]) == "bacd"
 
     def test_permute_counts(self):
         assert permute_counts({"00": 10, "01": 20}, [1, 0]) == {"00": 10, "10": 20}
