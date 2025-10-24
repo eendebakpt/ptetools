@@ -12,6 +12,8 @@ from ptetools.qiskit import (
     counts2fractions,
     dense2sparse,
     fractions2counts,
+    generate_bitstring_tuples,
+    generate_bitstrings,
     invert_permutation,
     largest_remainder_rounding,
     normalize_probability,
@@ -27,6 +29,13 @@ def circuit_instruction_names(qc):
 
 
 class TestBitConversions(unittest.TestCase):
+    def test_generate_bitstring_tuples(self):
+        assert list(generate_bitstring_tuples(1)) == [(0,), (1,)]
+
+    def test_generate_bitstrings(self):
+        assert generate_bitstrings(1) == ["0", "1"]
+        assert generate_bitstrings(2) == ["00", "01", "10", "11"]
+
     def test_permute_bits(self):
         permutation = [0, 1, 3, 2]
         assert permute_bits(idx=0, permutation=permutation) == 0

@@ -1,3 +1,4 @@
+import itertools
 import logging
 import pathlib
 import random
@@ -31,6 +32,23 @@ ComplexArray = np.typing.NDArray[np.complex128]
 
 
 # %% Bit conversions
+
+
+def generate_bitstring_tuples(number_of_bits: int):
+    return itertools.product(*((0, 1),) * (number_of_bits))
+
+
+def generate_bitstrings(number_of_bits: int) -> list[str]:
+    """Generate bitstrings for specified number of bits
+
+    Example:
+        >>> generate_bitstrings(2)
+        ['00', '01', '10', '11']
+    """
+    fmt = f"{{:0{number_of_bits}b}}"
+    return [fmt.format(w) for w in range(2**number_of_bits)]
+
+
 def invert_permutation(permutation) -> IntArray:
     inv = np.empty_like(permutation)
     inv[permutation] = np.arange(len(inv), dtype=int)
