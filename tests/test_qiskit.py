@@ -7,19 +7,66 @@ from ptetools.qiskit import (
     ModifyDelayGate,
     RemoveGateByName,
     RemoveZeroDelayGate,
+    bitlist_to_int,
     circuit2matrix,
     counts2dense,
     counts2fractions,
     dense2sparse,
     fractions2counts,
+    generate_bitstring_tuples,
+    generate_bitstrings,
+    invert_permutation,
     largest_remainder_rounding,
     normalize_probability,
+    permute_bits,
+    permute_counts,
+    permute_string,
     random_clifford_circuit,
 )
 
 
 def circuit_instruction_names(qc):
     return [i.operation.name for i in qc]
+
+
+class TestBitConversions(unittest.TestCase):
+    def test_generate_bitstring_tuples(self):
+        assert list(generate_bitstring_tuples(1)) == [(0,), (1,)]
+
+    def test_generate_bitstrings(self):
+        assert generate_bitstrings(1) == ["0", "1"]
+        assert generate_bitstrings(2) == ["00", "01", "10", "11"]
+
+    def test_bitlist_to_int(self):
+        assert bitlist_to_int([0, 1, 1]) == 3
+
+    def test_invert_permutation(self):
+        np.testing.assert_array_equal(invert_permutation([0, 1]), [0, 1])
+        np.testing.assert_array_equal(invert_permutation([1, 0]), [1, 0])
+        np.testing.assert_array_equal(invert_permutation([1, 2, 0]), [2, 0, 1])
+        np.testing.assert_array_equal(invert_permutation([0, 1, 3, 2]), np.array([0, 1, 3, 2]))
+
+    def test_permute_bits(self):
+        permutation = [0, 1, 3, 2]
+        assert permute_bits(idx=0, permutation=permutation) == 0
+        assert permute_bits(idx=1, permutation=permutation) == 1
+        assert permute_bits(idx=2, permutation=permutation) == 2
+        assert permute_bits(idx=4, permutation=permutation) == 8
+
+        assert permute_bits(idx=0, permutation=[1, 0]) == 0
+        assert permute_bits(idx=1, permutation=[1, 0]) == 2
+        assert permute_bits(idx=1, permutation=[1, 2, 0]) == 4
+        assert permute_bits(idx=3, permutation=[3, 4, 0, 1, 2]) == 12
+
+    def test_permute_string(self):
+        assert permute_string("abcd", [1, 0, 2, 3]) == "bacd"
+
+    def test_permute_counts(self):
+        assert permute_counts({"00": 10, "01": 20}, [1, 0]) == {"00": 10, "10": 20}
+
+        counts = {"1110": 945, "0010": 7, "1011": 16}
+        permutation = [1, 0, 2, 3]
+        assert permute_counts(counts, permutation) == {"1101": 945, "0001": 7, "1011": 16}
 
 
 class TestQiskit(unittest.TestCase):
@@ -32,6 +79,7 @@ class TestQiskit(unittest.TestCase):
         assert list(qc)[0].operation.duration == 6
 
     def test_dense2sparse(self):
+        assert dense2sparse([1, 0]) == {"0": 1}
         assert dense2sparse([1, 2]) == {"0": 1, "1": 2}
         assert dense2sparse([1, 2, 3, 4]) == {"00": 1, "01": 2, "10": 3, "11": 4}
 
