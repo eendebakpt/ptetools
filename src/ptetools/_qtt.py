@@ -467,7 +467,7 @@ def pg_scaling(scale: float | FloatArray, cc: FloatArray | None = None) -> Float
     H = np.diag(scale)
     if cc is not None:
         cc = np.asarray(cc).flatten()
-        H = pg_transl2H(cc).dot(H).dot(pg_transl2H(-cc))
+        H = pg_transl2homogeneous(cc).dot(H).dot(pg_transl2homogeneous(-cc))
 
     return H
 
@@ -488,10 +488,10 @@ def dehom(x: np.ndarray) -> np.ndarray:
     return x[0:-1, :] / x[-1, :]
 
 
-def pg_transl2H(tr: FloatArray) -> FloatArray:
+def pg_transl2homogeneous(tr: FloatArray) -> FloatArray:
     """Convert translation to homogeneous transform matrix
 
-    >>> pg_transl2H([1, 2])
+    >>> pg_transl2homogeneous([1, 2])
     array([[ 1.,  0.,  1.],
             [ 0.,  1.,  2.],
             [ 0.,  0.,  1.]])
@@ -503,9 +503,9 @@ def pg_transl2H(tr: FloatArray) -> FloatArray:
     return H
 
 
-def pg_rotation2H(R: FloatArray) -> FloatArray:
+def pg_rotation2H(rotation_matrix: FloatArray) -> FloatArray:
     """Convert rotation matrix to homogenous transform matrix"""
-    return pg_affine2hom(R)
+    return pg_affine2hom(rotation_matrix)
 
 
 def pg_rotx(phi: float) -> FloatArray:
@@ -555,12 +555,12 @@ def mean_of_directions(vec):
     m = vec.mean(axis=0)
     angle_initial_guess = np.arctan2(m[0], m[1])
 
-    r = scipy.optimize.minimize(cost_function, angle_initial_guess, callback=None, options=dict({"disp": False}))
+    r = scipy.optimize.minimize(cost_function, angle_initial_guess, callback=None, options=({"disp": False}))
     angle = r.x[0]
     return angle
 
 
-def pg_affine2homogeneous(A: FloatArray) -> FloatArray:
+def pg_affine2homogeneous(affine_transform: FloatArray) -> FloatArray:
     """Create homogeneous transformation from affine transformation
 
     Args:
@@ -576,8 +576,8 @@ def pg_affine2homogeneous(A: FloatArray) -> FloatArray:
            [ 0.,  1.]])
 
     """
-    H = np.eye(A.shape[0] + 1, dtype=A.dtype)
-    H[:-1, :-1] = A
+    H = np.eye(affine_transform.shape[0] + 1, dtype=affine_transform.dtype)
+    H[:-1, :-1] = affine_transform
     return H
 
 
@@ -587,11 +587,11 @@ pg_affine2hom = pg_affine2homogeneous
 def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
     """Apply a projective transformation to a k x N array
 
-    >>> y = projectiveTransformation( np.eye(3), np.random.rand( 2, 10 ))
+    >>> y = projectiveTransformation(np.eye(3), np.random.rand( 2, 10 ))
     """
     try:
         import cv2
-    except (ModuleNotFoundError, ImportError):
+    except ImportError:
         assert False, "could not find or load OpenCV, 'projectiveTransformation' is not available"
 
     k = x.shape[0]
@@ -635,7 +635,7 @@ def decompose_projective_transformation(
     km = k - 1
 
     eta = H[k - 1, k - 1]
-    Hp = np.vstack((np.eye(km, k), H[k - 1, :]))
+    Hprojective = np.vstack((np.eye(km, k), H[k - 1, :]))
     A = H[0:km, 0:km]
     t = H[0:km, -1]
     v = H[k - 1, 0:km].T
@@ -645,7 +645,7 @@ def decompose_projective_transformation(
         print("decompose_projective_transformation: part A of matrix is (near) singular")
 
     sRK = A - np.array(t).dot(np.array(v.T))
-    # upper left block of H*inv(Hp)
+    # upper left block of H*inv(Hprojective)
     R, K = np.linalg.qr(sRK)
     K = np.asarray(K)
     R = np.asarray(R)
@@ -669,4 +669,4 @@ def decompose_projective_transformation(
 
     elements = namedtuple("elements", ["s", "phi", "t", "v", "eta"])
     rest = elements(s, phi, t, v, eta)
-    return Ha, Hs, Hp, rest
+    return Ha, Hs, Hprojective, rest

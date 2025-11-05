@@ -10,7 +10,7 @@ from ptetools._qtt import (
     pg_rotx,
     pg_rotz,
     pg_scaling,
-    pg_transl2H,
+    pg_transl2homogeneous,
     projective_transformation,
 )
 
@@ -24,7 +24,7 @@ class TestGeometryOperations(unittest.TestCase):
     def test_projective_transformation(self):
         x = np.array([[1.0, 0], [0, 2]])
 
-        H = pg_transl2H([1.0, -1])
+        H = pg_transl2homogeneous([1.0, -1])
         y = projective_transformation(H, x)
         expected = np.array([[2.0, 1.0], [-1.0, 1.0]])
         np.testing.assert_array_almost_equal(y, expected)
@@ -34,7 +34,7 @@ class TestGeometryOperations(unittest.TestCase):
         np.testing.assert_array_almost_equal(y, expected)
 
         with self.assertRaises(Exception):
-            y = projective_transformation(np.eye(2), x)
+            projective_transformation(np.eye(2), x)
 
         H = np.eye(3)
         H[2, 0] = -1
@@ -51,18 +51,18 @@ class TestGeometryOperations(unittest.TestCase):
         np.testing.assert_almost_equal(identity, np.eye(3))
 
         for phi in [0, 0.1, np.pi, 4]:
-            Rx = pg_rotx(phi)
-            self.assertAlmostEqual(Rx[1, 1], np.cos(phi))
-            self.assertAlmostEqual(Rx[2, 1], np.sin(phi))
+            rx = pg_rotx(phi)
+            self.assertAlmostEqual(rx[1, 1], np.cos(phi))
+            self.assertAlmostEqual(rx[2, 1], np.sin(phi))
 
     def test_pg_rotz(self):
         identity = pg_rotz(90).dot(pg_rotz(-90))
         np.testing.assert_almost_equal(identity, np.eye(3))
 
         for phi in [0, 0.1, np.pi, 4]:
-            Rz = pg_rotz(phi)
-            self.assertAlmostEqual(Rz[0, 0], np.cos(phi))
-            self.assertAlmostEqual(Rz[1, 0], np.sin(phi))
+            rz = pg_rotz(phi)
+            self.assertAlmostEqual(rz[0, 0], np.cos(phi))
+            self.assertAlmostEqual(rz[1, 0], np.sin(phi))
 
     def test_pg_scaling(self):
         H = pg_scaling([1, 2])
@@ -80,13 +80,13 @@ class TestGeometryOperations(unittest.TestCase):
 
     def test_decompose_projective_transformation(self):
         R = pg_rotation2H(pg_rotx(np.pi / 2))
-        Ha, Hs, Hp, _ = decompose_projective_transformation(R)
-        self.assertIsInstance(Ha, np.ndarray)
-        np.testing.assert_array_almost_equal(Hs @ Ha @ Hp, R)
+        affine, scaling, projective, _ = decompose_projective_transformation(R)
+        self.assertIsInstance(affine, np.ndarray)
+        np.testing.assert_array_almost_equal(scaling @ affine @ projective, R)
 
         R = pg_rotation2H(pg_rotx(0.012))
-        Ha, Hs, Hp, _ = decompose_projective_transformation(R)
-        np.testing.assert_array_almost_equal(Hs @ Ha @ Hp, R)
+        affine, scaling, projective, _ = decompose_projective_transformation(R)
+        np.testing.assert_array_almost_equal(scaling @ affine @ projective, R)
 
     def test_mean_of_directions(self):
         directions = [[1, 0], [1, 0.1], [1, -0.1]]
