@@ -19,7 +19,8 @@ pip install -e . --upgrade
 
 Build new package
 ```
-python -m build . --sdist
+#python -m build . --sdist
+python -m pip wheel . -w dist --no-deps
 twine upload ...
 ````
 Testing
