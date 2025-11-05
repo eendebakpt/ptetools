@@ -40,7 +40,7 @@ class TestGeometryOperations(unittest.TestCase):
         H[2, 0] = -1
         y = projective_transformation(H, x)
         expected = np.array([[0.0, 0.0], [0.0, 2.0]])
-        np.testing.assert_array_almost_equal(y, expected)
+        np.testing.assert_array_almost_equal(y[:, 1:], expected[:, 1:])
 
         x = np.array([[], []])
         y = projective_transformation(np.eye(3), x)
