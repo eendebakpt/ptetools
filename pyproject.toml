@@ -87,7 +87,7 @@ fail_under = 85
 [tool.ruff]
 src = ["src"]
 lint.select = ["E", "F", "UP", "I"]
-lint.ignore = [ "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`, ignore for performance
+lint.ignore = [ 
            "E712" # https://github.com/astral-sh/ruff/issues/4560
         ]
 line-length = 120

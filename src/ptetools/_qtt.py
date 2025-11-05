@@ -23,9 +23,12 @@ SOFTWARE.
 """
 
 import contextlib
+import copy
 import logging
 import time
+from collections import namedtuple
 from collections.abc import Callable, Sequence
+from math import cos, sin
 from types import TracebackType
 from typing import Any, Literal
 
@@ -34,6 +37,7 @@ import matplotlib.figure
 import matplotlib.pylab as pylab
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 
 FloatArray = np.typing.NDArray[np.float64]
 
@@ -439,3 +443,230 @@ def logging_context(level: int = logging.INFO, logger: None | logging.Logger = N
         yield
     finally:
         logger.setLevel(previous_level)
+
+
+def pg_scaling(scale: float | FloatArray, cc: FloatArray | None = None) -> FloatArray:
+    """Create scale transformation with specified centre
+
+    Args:
+        scale: Scaling vector
+        cc: Centre for the scale transformation. If None, then take the origin
+
+    Returns:
+        Scale transformation
+
+    Example
+    -------
+    >>> pg_scaling( [1.,2])
+    array([[ 1.,  0.,  0.],
+           [ 0.,  2.,  0.],
+           [ 0.,  0.,  1.]])
+
+    """
+    scale = np.hstack((scale, 1))
+    H = np.diag(scale)
+    if cc is not None:
+        cc = np.asarray(cc).flatten()
+        H = pg_transl2H(cc).dot(H).dot(pg_transl2H(-cc))
+
+    return H
+
+
+def hom(x: FloatArray) -> FloatArray:
+    """Convert affine to homogeneous coordinates
+
+    Args:
+        x: k x N array in affine coordinates
+    Returns:
+        An (k+1xN) arrayin homogeneous coordinates
+    """
+    return np.vstack((x, np.ones_like(x, shape=(1, x.shape[1]))))
+
+
+def dehom(x: np.ndarray) -> np.ndarray:
+    """Convert homogeneous points to affine coordinates"""
+    return x[0:-1, :] / x[-1, :]
+
+
+def pg_transl2H(tr: FloatArray) -> FloatArray:
+    """Convert translation to homogeneous transform matrix
+
+    >>> pg_transl2H([1, 2])
+    array([[ 1.,  0.,  1.],
+            [ 0.,  1.,  2.],
+            [ 0.,  0.,  1.]])
+
+    """
+    sh = np.asarray(tr)
+    H = np.eye(sh.size + 1)
+    H[0:-1, -1] = sh.flatten()
+    return H
+
+
+def pg_rotation2H(R: FloatArray) -> FloatArray:
+    """Convert rotation matrix to homogenous transform matrix"""
+    return pg_affine2hom(R)
+
+
+def pg_rotx(phi: float) -> FloatArray:
+    """Create rotation around the x-axis with specified angle"""
+    c = cos(phi)
+    s = sin(phi)
+    R = np.zeros((3, 3))
+    R.ravel()[:] = [1, 0, 0, 0, c, -s, 0, s, c]
+    return R
+
+
+def pg_rotz(phi: float) -> FloatArray:
+    """Create rotation around the z-axis with specified angle"""
+    c = cos(phi)
+    s = sin(phi)
+    R = np.zeros((3, 3))
+    R.ravel()[:] = [c, -s, 0, s, c, 0, 0, 0, 1]
+    return R
+
+
+def mean_of_directions(vec):
+    """Calculate the mean of a set of directions
+
+    The initial direction is determined using the oriented direction. Then a non-linear optimization is done.
+
+    Args:
+        vec: List of directions
+
+    Returns
+        Angle of mean of directions
+
+    >>> vv = np.array( [[1,0],[1,0.1], [-1,.1]])
+    >>> a = mean_of_directions(vv)
+
+    """
+    vec = np.asarray(vec)
+    vector_angles = np.arctan2(vec[:, 0], vec[:, 1])
+
+    mod = np.mod
+    norm = np.linalg.norm
+
+    def cost_function(a):
+        x = mod(a - vector_angles + np.pi / 2, np.pi) - np.pi / 2
+        cost = norm(x)
+        return cost
+
+    m = vec.mean(axis=0)
+    angle_initial_guess = np.arctan2(m[0], m[1])
+
+    r = scipy.optimize.minimize(cost_function, angle_initial_guess, callback=None, options=dict({"disp": False}))
+    angle = r.x[0]
+    return angle
+
+
+def pg_affine2homogeneous(A: FloatArray) -> FloatArray:
+    """Create homogeneous transformation from affine transformation
+
+    Args:
+        U: Affine transformation
+
+    Returns:
+        Homogeneous transformation
+
+    Example
+    -------
+    >>> pg_affine2homogeneous(np.array([[2.]]))
+    array([[ 2.,  0.],
+           [ 0.,  1.]])
+
+    """
+    H = np.eye(A.shape[0] + 1, dtype=A.dtype)
+    H[:-1, :-1] = A
+    return H
+
+
+pg_affine2hom = pg_affine2homogeneous
+
+
+def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
+    """Apply a projective transformation to a k x N array
+
+    >>> y = projectiveTransformation( np.eye(3), np.random.rand( 2, 10 ))
+    """
+    try:
+        import cv2
+    except (ModuleNotFoundError, ImportError):
+        assert False, "could not find or load OpenCV, 'projectiveTransformation' is not available"
+
+    k = x.shape[0]
+    kout = H.shape[0] - 1
+    xx = x.transpose().reshape((-1, 1, k))
+
+    if xx.dtype is np.integer or xx.dtype == "int64":
+        xx = xx.astype(np.float32)
+    if xx.size > 0:
+        ww = cv2.perspectiveTransform(xx, H)
+        ww = ww.reshape((-1, kout)).transpose()
+        return ww
+    else:
+        return copy.copy(x)
+
+
+def decompose_projective_transformation(
+    H: FloatArray,
+) -> tuple[FloatArray, FloatArray, FloatArray, tuple[Any, Any, FloatArray, FloatArray]]:
+    """Decompose projective transformation
+
+    H is decomposed as H = Hs * Ha * Hp with
+
+     Hs = [sR t]
+          [0  1]
+
+     Ha = [K 0]
+          [0 1]
+
+     Hp = [I 0]
+          [v' eta]
+
+    If H is 3-dimensional, then R = [cos(phi) -sin(phi); sin(phi) cos(phi)];
+
+    For more information see "Multiple View Geometry", paragraph 1.4.6.
+
+    >>> Ha, Hs, Hp, rest = decomposeProjectiveTransformation( np.eye(3) )
+    """
+    H = np.asarray(H)
+    k = H.shape[0]
+    km = k - 1
+
+    eta = H[k - 1, k - 1]
+    Hp = np.vstack((np.eye(km, k), H[k - 1, :]))
+    A = H[0:km, 0:km]
+    t = H[0:km, -1]
+    v = H[k - 1, 0:km].T
+
+    eps = 1e-10
+    if np.abs(np.linalg.det(A)) < 4 * eps:
+        print("decompose_projective_transformation: part A of matrix is (near) singular")
+
+    sRK = A - np.array(t).dot(np.array(v.T))
+    # upper left block of H*inv(Hp)
+    R, K = np.linalg.qr(sRK)
+    K = np.asarray(K)
+    R = np.asarray(R)
+
+    s = (np.abs(np.linalg.det(K))) ** (1.0 / km)
+    K = K / s
+
+    if k == 2 and K[0, 0] < 0:  # in 3-dimensional case normalize sign
+        K = np.diag([-1, 1]) * K
+        R = R.dot(np.diag([-1, 1]))
+    else:
+        # primitive...
+        sc = np.sign(np.diag(K))
+        K = np.diag(sc).dot(K)
+        R = R.dot(np.diag(sc))
+    br = np.hstack((np.zeros((1, km)), np.ones((1, 1))))
+    Hs = np.vstack((np.hstack((s * R, t.reshape((-1, 1)))), br))
+    Ha = np.vstack((np.hstack((K, np.zeros((km, 1)))), br))
+
+    phi = np.arctan2(R[1, 0], R[0, 0])
+
+    elements = namedtuple("elements", ["s", "phi", "t", "v", "eta"])
+    rest = elements(s, phi, t, v, eta)
+    return Ha, Hs, Hp, rest

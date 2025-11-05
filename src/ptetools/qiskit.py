@@ -90,6 +90,14 @@ def permute_counts(counts: CountsType, permutation: Sequence[int]) -> CountsType
     return {permute_string(bitstring[::-1], permutation)[::-1]: value for bitstring, value in counts.items()}
 
 
+def generate_state_labels(k: int, latex: bool = True):
+    """Generate state labels for the specified number of qubits"""
+    if latex:
+        return [f"$|{b}\\rangle$" for b in generate_bitstrings(k)]
+    else:
+        return [f"|{b}>" for b in generate_bitstrings(k)]
+
+
 if __name__ == "__main__":  # pragma: no cover
     permutation = [0, 1, 3, 2]
     print(permute_bits(idx=1, permutation=permutation))
@@ -109,6 +117,8 @@ if __name__ == "__main__":  # pragma: no cover
     counts = {"1110": 945, "0010": 7, "1011": 16}
     permutation = [1, 0, 2, 3]
     assert permute_counts(counts, permutation) == {"1101": 945, "0001": 7, "1011": 16}
+
+    generate_state_labels(3)
 
 # %%
 
