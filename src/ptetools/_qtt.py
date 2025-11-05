@@ -216,7 +216,7 @@ def tilefigs(
     for ii, f in enumerate(lst):
         if isinstance(f, matplotlib.figure.Figure):
             fignum = f.number  # type: ignore
-        elif isinstance(f, (int, np.int32, np.int64)):
+        elif isinstance(f, int | np.int32 | np.int64):
             fignum = f
         else:
             try:
