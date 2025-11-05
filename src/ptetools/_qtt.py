@@ -587,12 +587,12 @@ pg_affine2hom = pg_affine2homogeneous
 def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
     """Apply a projective transformation to a k x N array
 
-    >>> y = projectiveTransformation(np.eye(3), np.random.rand( 2, 10 ))
+    >>> y = projective_transformation(np.eye(3), np.random.rand( 2, 10))
     """
     try:
         import cv2
     except ImportError:
-        assert False, "could not find or load OpenCV, 'projectiveTransformation' is not available"
+        return dehom(H @ hom(x))
 
     k = x.shape[0]
     kout = H.shape[0] - 1
