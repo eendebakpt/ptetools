@@ -6,7 +6,7 @@ from ptetools._qtt import (
     decompose_projective_transformation,
     hom,
     mean_of_directions,
-    pg_rotation2H,
+    pg_rotation2homogeneous,
     pg_rotx,
     pg_rotz,
     pg_scaling,
@@ -72,19 +72,19 @@ class TestGeometryOperations(unittest.TestCase):
         with self.assertRaises(ValueError):
             pg_scaling([1], [1, 2])
 
-    def test_pg_rotation2H(self):
+    def test_pg_rotation2homogeneous(self):
         R = pg_rotx(0.12)
-        H = pg_rotation2H(R)
+        H = pg_rotation2homogeneous(R)
         np.testing.assert_almost_equal(R, H[:3, :3])
         self.assertIsNotNone(H)
 
     def test_decompose_projective_transformation(self):
-        R = pg_rotation2H(pg_rotx(np.pi / 2))
+        R = pg_rotation2homogeneous(pg_rotx(np.pi / 2))
         affine, scaling, projective, _ = decompose_projective_transformation(R)
         self.assertIsInstance(affine, np.ndarray)
         np.testing.assert_array_almost_equal(scaling @ affine @ projective, R)
 
-        R = pg_rotation2H(pg_rotx(0.012))
+        R = pg_rotation2homogeneous(pg_rotx(0.012))
         affine, scaling, projective, _ = decompose_projective_transformation(R)
         np.testing.assert_array_almost_equal(scaling @ affine @ projective, R)
 

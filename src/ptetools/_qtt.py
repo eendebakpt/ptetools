@@ -503,7 +503,7 @@ def pg_transl2homogeneous(tr: FloatArray) -> FloatArray:
     return H
 
 
-def pg_rotation2H(rotation_matrix: FloatArray) -> FloatArray:
+def pg_rotation2homogeneous(rotation_matrix: FloatArray) -> FloatArray:
     """Convert rotation matrix to homogenous transform matrix"""
     return pg_affine2hom(rotation_matrix)
 
