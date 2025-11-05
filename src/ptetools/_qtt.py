@@ -505,7 +505,7 @@ def pg_transl2homogeneous(tr: FloatArray) -> FloatArray:
 
 def pg_rotation2homogeneous(rotation_matrix: FloatArray) -> FloatArray:
     """Convert rotation matrix to homogenous transform matrix"""
-    return pg_affine2hom(rotation_matrix)
+    return pg_affine_to_homogeneous(rotation_matrix)
 
 
 def pg_rotx(phi: float) -> FloatArray:
@@ -560,7 +560,7 @@ def mean_of_directions(vec):
     return angle
 
 
-def pg_affine2homogeneous(affine_transform: FloatArray) -> FloatArray:
+def pg_affine_to_homogeneous(affine_transform: FloatArray) -> FloatArray:
     """Create homogeneous transformation from affine transformation
 
     Args:
@@ -571,7 +571,7 @@ def pg_affine2homogeneous(affine_transform: FloatArray) -> FloatArray:
 
     Example
     -------
-    >>> pg_affine2homogeneous(np.array([[2.]]))
+    >>> pg_affine_to_homogeneousogeneous(np.array([[2.]]))
     array([[ 2.,  0.],
            [ 0.,  1.]])
 
@@ -579,9 +579,6 @@ def pg_affine2homogeneous(affine_transform: FloatArray) -> FloatArray:
     H = np.eye(affine_transform.shape[0] + 1, dtype=affine_transform.dtype)
     H[:-1, :-1] = affine_transform
     return H
-
-
-pg_affine2hom = pg_affine2homogeneous
 
 
 def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
