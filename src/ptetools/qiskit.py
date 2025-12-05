@@ -30,6 +30,7 @@ from ptetools.tools import sorted_dictionary
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
 IntArray = np.typing.NDArray[int]
+IntArrayLike = np.typing.NDArray[int]
 FloatArray = np.typing.NDArray[np.float64]
 ComplexArray = np.typing.NDArray[np.complex128]
 
@@ -134,7 +135,7 @@ def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]: ...
 def counts2fractions(counts: CountsType) -> FractionsType: ...
 
 
-def largest_remainder_rounding(fractions: FloatArray, total: int) -> IntArray:
+def largest_remainder_rounding(fractions: FloatArray, total: int) -> list[int]:
     """Largest remainder rounding algorithm
 
         This function take a list of fractions and rounds to integers such that the sum adds
@@ -228,7 +229,7 @@ if __name__ == "__main__":  # pragma: no cover
     print(counts2dense({"1 0": 1.0}, 2))
     print(counts2fractions({"11": 20, "00": 30}))
     print(counts2fractions([{"11": 20, "00": 30}]))
-    print(dense2sparse([2, 0, 4, 2]))
+    print(dense2sparse([2, 0, 4, 2]))  # noqa
 
 
 def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
@@ -270,7 +271,7 @@ class RemoveGateByName(TransformationPass):  # type: ignore
         super().__init__(*args, **kwargs)
         self._gate_name = gate_name
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
         """Run the RemoveGateByName pass on `dag`."""
 
         dag.remove_all_ops_named(self._gate_name)
@@ -297,7 +298,7 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
         self._empty_dag1 = qiskit.converters.circuit_to_dag(QuantumCircuit(1))
         super().__init__(*args, **kwargs)
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
         """Run the RemoveZeroDelayGate pass on `dag`."""
 
         for node in dag.op_nodes():
@@ -305,10 +306,6 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
                 if node.op.params[0] == 0:
                     dag.substitute_node_with_dag(node, self._empty_dag1)
         return dag
-
-    def __repr__(self) -> str:
-        name = self.__class__.__module__ + "." + self.__class__.__name__
-        return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
 
 
 if __name__ == "__main__":  # pragma: no cover
@@ -361,7 +358,7 @@ class ModifyDelayGate(TransformationPass):  # type: ignore
         self.round = round
         self.dt = dt
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
         """Run the pass on `dag`.
         Args:
             dag: input dag.

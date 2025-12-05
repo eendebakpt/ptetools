@@ -218,7 +218,7 @@ def profile_expression(expression: str, N: int | None = 1, gui: None | str = "sn
         N = int(1.0 / max(dt - 0.6e-3, 1e-6))
         if N <= 1:  # pragma: no cover
             print(f"profiling: 1 iteration, {dt:.2f} [s]")
-            r = subprocess.Popen([gui, statsfile])
+            r = subprocess.Popen([gui, statsfile])  # type: ignore
             return statsfile, r
     else:
         N = int(N)
