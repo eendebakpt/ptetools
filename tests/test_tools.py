@@ -25,6 +25,8 @@ from ptetools.tools import (
     plotLabels,
     profile_expression,
     robust_cost_function,
+    short_repr_array,
+    short_repr_attribute,
     sorted_dictionary,
 )
 
@@ -70,6 +72,16 @@ class TestTools(unittest.TestCase):
 
         with pytest.raises(TypeError):
             sorted_dictionary(10)
+
+    def test_short_repr_array():
+        assert short_repr_array(None) == "None"
+        assert short_repr_array(np.array([1])) == "numpy.ndarray(shape=(1,))"
+
+    def test_short_repr_attribute():
+        assert short_repr_attribute(None) == "None"
+        for value in [1, 1.0, True]:
+            assert short_repr_attribute(value) == repr(value)
+        assert "tuple" in short_repr_attribute((1, 2))
 
     def test_make_blocks(self):
         assert make_blocks(5, 2) == [(0, 2), (2, 4), (4, 5)]
