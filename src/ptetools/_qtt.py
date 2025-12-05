@@ -167,7 +167,7 @@ def static_var(variable_name: str, value: Any) -> Callable:
 @static_var("monitorindex", -1)  # pragma: no cover
 def tilefigs(
     lst: list[int | plt.Figure],
-    geometry: Sequence[int] | None = None,
+    geometry: Sequence[int] | None = (2, 2),
     ww: tuple[int] | list[int] | None = None,
     raisewindows: bool = False,
     tofront: bool = False,
@@ -190,8 +190,6 @@ def tilefigs(
         y_offset: Offset for window tile bars
     """
 
-    if geometry is None:
-        geometry = (2, 2)
     mngr = plt.get_current_fig_manager()
     be = matplotlib.get_backend()
     if monitorindex is None:
@@ -214,6 +212,8 @@ def tilefigs(
     if verbose:
         print(f"tilefigs: ww {ww}, w {w} h {h}")
     for ii, f in enumerate(lst):
+        if f is None:
+            continue
         if isinstance(f, matplotlib.figure.Figure):
             fignum = f.number  # type: ignore
         elif isinstance(f, int | np.int32 | np.int64):
