@@ -101,7 +101,9 @@ class TestQiskit(unittest.TestCase):
 
     def test_normalize_fractions(self):
         np.testing.assert_array_equal(normalize_fractions([0, 1.001]), [0, 1])
-        np.testing.assert_array_almost_equal(normalize_fractions([0, 0.1, 0.34, 0.6]), np.array([0.0, 0.1, 0.33, 0.58]))
+        np.testing.assert_array_almost_equal(
+            normalize_fractions([0, 0.1, 0.34, 0.6]), np.array([0.0, 0.09615385, 0.32692308, 0.57692308])
+        )
 
     def test_RemoveGateByName(self):
         qc = QuantumCircuit(3)
