@@ -73,11 +73,11 @@ class TestTools(unittest.TestCase):
         with pytest.raises(TypeError):
             sorted_dictionary(10)
 
-    def test_short_repr_array():
+    def test_short_repr_array(self):
         assert short_repr_array(None) == "None"
         assert short_repr_array(np.array([1])) == "numpy.ndarray(shape=(1,))"
 
-    def test_short_repr_attribute():
+    def test_short_repr_attribute(self):
         assert short_repr_attribute(None) == "None"
         for value in [1, 1.0, True]:
             assert short_repr_attribute(value) == repr(value)

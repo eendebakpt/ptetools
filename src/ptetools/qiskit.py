@@ -390,7 +390,6 @@ def choi_to_unitary(choi: ComplexArray) -> ComplexArray:
     b = [bb] * 2
     hermitian_choi = (choi + choi.conj().T) / 2  # enforce Hermiticity
     choi_qobj = Qobj(hermitian_choi, dims=b, superrep="choi")
-    # choi_qobj = Qobj(hermitian_choi, dims= [[[2], [2]], [[2], [2]]], superrep='choi')
 
     krauss = qutip.core.superop_reps.to_kraus(choi_qobj)
     dominant_idx = np.nanargmax([np.abs(np.linalg.det(c.full())) for c in krauss])
