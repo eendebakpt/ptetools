@@ -17,6 +17,7 @@ from ptetools.qiskit import (
     generate_bitstrings,
     invert_permutation,
     largest_remainder_rounding,
+    normalize_fractions,
     normalize_probability,
     permute_bits,
     permute_counts,
@@ -97,6 +98,12 @@ class TestQiskit(unittest.TestCase):
         assert c.num_qubits == 1
         c, index = random_clifford_circuit(2)
         assert c.num_qubits == 2
+
+    def test_normalize_fractions(self):
+        np.testing.assert_array_equal(normalize_fractions([0, 1.001]), [0, 1])
+        np.testing.assert_array_almost_equal(
+            normalize_fractions([0, 0.1, 0.34, 0.6]), np.array([0.0, 0.09615385, 0.32692308, 0.57692308])
+        )
 
     def test_RemoveGateByName(self):
         qc = QuantumCircuit(3)

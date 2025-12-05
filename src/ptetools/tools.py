@@ -4,6 +4,7 @@ import operator
 import os
 import tempfile
 import time
+import types
 from collections.abc import Callable, Sequence
 from itertools import chain, repeat
 from typing import Any, Literal
@@ -217,7 +218,7 @@ def profile_expression(expression: str, N: int | None = 1, gui: None | str = "sn
         N = int(1.0 / max(dt - 0.6e-3, 1e-6))
         if N <= 1:  # pragma: no cover
             print(f"profiling: 1 iteration, {dt:.2f} [s]")
-            r = subprocess.Popen([gui, statsfile])
+            r = subprocess.Popen([gui, statsfile])  # type: ignore
             return statsfile, r
     else:
         N = int(N)
@@ -404,12 +405,33 @@ def _repr_pretty_rich_(self, p: Any, cycle: bool) -> None:
     p.text(s)
 
 
+_short_atomic_types = frozenset({float, int, str, bool, types.NoneType})
+
+
 # def add_rich_repr[T: type](cls: T) -> T:  # python 3.12+
 def add_rich_repr(cls):
     """Add pretty representation method to a class using rich"""
 
     cls._repr_pretty_ = _repr_pretty_rich_  # ty: ignore
     return cls
+
+
+def short_repr_attribute(obj: Any) -> str:
+    """Short representation of dataclass attribute"""
+
+    if type(obj) in _short_atomic_types:
+        return repr(obj)
+    return f"{obj.__class__} at {id(obj)}"
+
+
+def short_repr_array(obj: Any) -> str:
+    """Short representation of dataclass array attribute"""
+    try:
+        c = obj.__class__.__module__ + "." + obj.__class__.__name__
+        txt = f"{c}(shape={obj.shape})"
+    except Exception:
+        txt = repr(obj)
+    return txt
 
 
 # %%

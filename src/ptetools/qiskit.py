@@ -1,5 +1,6 @@
 import itertools
 import logging
+import math
 import pathlib
 import random
 import tempfile
@@ -16,17 +17,20 @@ import qiskit.converters
 import qiskit.quantum_info as qi
 import qiskit.result
 import qiskit_experiments.framework.containers.figure_data
+import qutip.core.superop_reps
 from qiskit.circuit import Delay
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
+from qutip import Qobj
 
 from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
 IntArray = np.typing.NDArray[int]
+IntArrayLike = np.typing.NDArray[int]
 FloatArray = np.typing.NDArray[np.float64]
 ComplexArray = np.typing.NDArray[np.complex128]
 
@@ -131,7 +135,7 @@ def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]: ...
 def counts2fractions(counts: CountsType) -> FractionsType: ...
 
 
-def largest_remainder_rounding(fractions: FloatArray, total: int) -> IntArray:
+def largest_remainder_rounding(fractions: FloatArray, total: int) -> list[int]:
     """Largest remainder rounding algorithm
 
         This function take a list of fractions and rounds to integers such that the sum adds
@@ -185,7 +189,7 @@ def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType
         # corner case with no selected shots
         total = 1
 
-    return sorted_dictionary({k: v / total for k, v in counts.items()})  # ty: ignore
+    return sorted_dictionary({k: float(v / total) for k, v in counts.items()})  # ty: ignore
 
 
 def normalize_probability(probabilities: FloatArray) -> FloatArray:
@@ -215,11 +219,17 @@ def dense2sparse(d: IntArray) -> CountsType:
     return counts
 
 
+def normalize_fractions(f: FloatArray) -> FloatArray:
+    """Normalize fractions by clipping to [0, 1] range and scale to norm 1"""
+    f = np.clip(f, 0, 1)
+    return f / sum(f)
+
+
 if __name__ == "__main__":  # pragma: no cover
     print(counts2dense({"1 0": 1.0}, 2))
     print(counts2fractions({"11": 20, "00": 30}))
     print(counts2fractions([{"11": 20, "00": 30}]))
-    print(dense2sparse([2, 0, 4, 2]))
+    print(dense2sparse([2, 0, 4, 2]))  # noqa
 
 
 def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
@@ -261,7 +271,7 @@ class RemoveGateByName(TransformationPass):  # type: ignore
         super().__init__(*args, **kwargs)
         self._gate_name = gate_name
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
         """Run the RemoveGateByName pass on `dag`."""
 
         dag.remove_all_ops_named(self._gate_name)
@@ -288,7 +298,7 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
         self._empty_dag1 = qiskit.converters.circuit_to_dag(QuantumCircuit(1))
         super().__init__(*args, **kwargs)
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
         """Run the RemoveZeroDelayGate pass on `dag`."""
 
         for node in dag.op_nodes():
@@ -296,10 +306,6 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
                 if node.op.params[0] == 0:
                     dag.substitute_node_with_dag(node, self._empty_dag1)
         return dag
-
-    def __repr__(self) -> str:
-        name = self.__class__.__module__ + "." + self.__class__.__name__
-        return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
 
 
 if __name__ == "__main__":  # pragma: no cover
@@ -352,7 +358,7 @@ class ModifyDelayGate(TransformationPass):  # type: ignore
         self.round = round
         self.dt = dt
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
         """Run the pass on `dag`.
         Args:
             dag: input dag.
@@ -375,3 +381,36 @@ if __name__ == "__main__":  # pragma: no cover
     p = ModifyDelayGate(dt=20e-9, round=True)
     qc = p(qc)
     print(qc.draw())
+
+
+def choi_to_unitary(choi: ComplexArray) -> ComplexArray:
+    """Project choi matrix to closest unitary"""
+    n = int(math.log2(choi.shape[0])) // 2
+    bb = [[2] * n, [2] * n]
+    b = [bb] * 2
+    hermitian_choi = (choi + choi.conj().T) / 2  # enforce Hermiticity
+    choi_qobj = Qobj(hermitian_choi, dims=b, superrep="choi")
+
+    krauss = qutip.core.superop_reps.to_kraus(choi_qobj)
+    dominant_idx = np.nanargmax([np.abs(np.linalg.det(c.full())) for c in krauss])
+    U = krauss[dominant_idx].full()
+
+    phase = np.exp(-np.angle(U[0, 0]) * 1j)
+    U = phase * U
+    return U
+
+
+if __name__ == "__main__":  # pragma: no cover
+    import qutip
+
+    X = qutip.sigmax()
+    Y = qutip.sigmay()
+    Z = qutip.sigmaz()
+    for U in [X, Y & Z]:
+        s = qutip.core.superop_reps.to_super(U)
+        choi_qobj = qutip.core.superop_reps.to_choi(s)
+        choi = choi_qobj.full()
+        Ur = choi_to_unitary(choi)
+        IC = Ur @ U.full().conjugate().T
+        IC = np.exp(-np.angle(IC[0, 0]) * 1j) * IC
+        np.testing.assert_almost_equal(IC, np.eye(IC.shape[0]))
