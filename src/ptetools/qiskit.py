@@ -159,10 +159,19 @@ def largest_remainder_rounding(fractions: FloatArray, total: int) -> list[int]:
     return [int(x) for x in unround_numbers]
 
 
-def fractions2counts(f: list[CountsType] | CountsType, number_of_shots: int) -> list[CountsType] | CountsType:
-    def f2c(x, number_of_shots: int):
-        counts = largest_remainder_rounding(np.fromiter(x.values(), float), number_of_shots)
-        return dict(zip(x.keys(), counts))
+def fractions2counts(
+    f: list[CountsType] | CountsType, number_of_shots: int, integer_rounding: bool = True
+) -> list[CountsType] | CountsType:
+    if integer_rounding is True:
+
+        def f2c(x, number_of_shots: int):
+            counts = largest_remainder_rounding(np.fromiter(x.values(), float), number_of_shots)
+            return dict(zip(x.keys(), counts))
+    else:
+
+        def f2c(x, number_of_shots: int):
+            counts = {key: number_of_shots * value for key, value in x.items()}
+            return counts
 
     if isinstance(f, dict):
         return f2c(f, number_of_shots)

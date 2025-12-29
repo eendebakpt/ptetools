@@ -42,6 +42,14 @@ import scipy
 FloatArray = np.typing.NDArray[np.float64]
 
 
+def angle_mean(angles: FloatArray, weights: FloatArray | float = 1) -> float:
+    """Calculate circular mean of a set of angles"""
+    x = np.cos(angles) * weights
+    y = np.sin(angles) * weights
+    mean = np.atan2(y.mean(), x.mean())
+    return mean
+
+
 def robust_cost_function(x: FloatArray, thr: None | float | str, method: str = "L1") -> FloatArray | list[str]:
     """Robust cost function
 
