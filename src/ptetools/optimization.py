@@ -25,7 +25,7 @@ SOFTWARE.
 import datetime
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -121,7 +121,7 @@ class AverageDecreaseTermination:
 
 
 class OptimizerCallback:
-    _column_names = ["iteration", "timestamp", "residual"]
+    _column_names: tuple[str, str, str] = ("iteration", "timestamp", "residual")
 
     def __init__(self, show_progress: bool = False, store_data: bool = True, residual_fitting: bool = True) -> None:
         """Class to collect data of optimization procedures
@@ -144,7 +144,7 @@ class OptimizerCallback:
     def data(self) -> pd.DataFrame:
         """Return data gathered by callback"""
 
-        df = pd.DataFrame(self._data, columns=self._column_names)
+        df = pd.DataFrame(self._data, columns=self._column_names)  # type: ignore
 
         return df
 
@@ -229,7 +229,7 @@ class OptimizerCallback:
     def lmfit_callback(self, parameters, iteration, residual, *args, **kws):  # pragma: no cover
         """Callback method for lmfit optimizers"""
         if self._residual_fitting:
-            residual = np.linalg.norm(residual)
+            residual = cast(float, np.linalg.norm(residual))
 
         if self.show_progress:
             print(f"#{iteration}, {parameters}, {residual}")

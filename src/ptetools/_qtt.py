@@ -175,7 +175,7 @@ def static_var(variable_name: str, value: Any) -> Callable:
 @static_var("monitorindex", -1)  # pragma: no cover
 def tilefigs(
     lst: list[int | plt.Figure],
-    geometry: Sequence[int] | None = (2, 2),
+    geometry: Sequence[int] | tuple[int] = (2, 2),
     ww: tuple[int] | list[int] | None = None,
     raisewindows: bool = False,
     tofront: bool = False,
@@ -224,7 +224,7 @@ def tilefigs(
             continue
         if isinstance(f, matplotlib.figure.Figure):
             fignum = f.number  # type: ignore
-        elif isinstance(f, int | np.int32 | np.int64):
+        elif isinstance(f, int | np.integer):
             fignum = f
         else:
             try:
@@ -335,7 +335,7 @@ class attribute_context:
         if attrs is None:
             attrs = {}
         self.kwargs = attrs | kwargs
-        self.original = None
+        self.original: None | dict[str, Any] = None
 
     def __enter__(self) -> "attribute_context":
         self.original = {key: getattr(self.obj, key) for key in self.kwargs}
@@ -350,6 +350,7 @@ class attribute_context:
         exc_val: BaseException | None,
         exc_traceback: TracebackType | None,
     ) -> Literal[False]:
+        assert self.original is not None
         for key, value in self.original.items():
             setattr(self.obj, key, value)
         self.original = None
@@ -608,7 +609,7 @@ def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
     if xx.size > 0:
         ww = cv2.perspectiveTransform(xx, H)
         ww = ww.reshape((-1, kout)).transpose()
-        return ww
+        return ww  # type: ignore
     else:
         return copy.copy(x)
 

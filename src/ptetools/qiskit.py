@@ -29,8 +29,8 @@ from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
-IntArray = np.typing.NDArray[int]
-IntArrayLike = np.typing.NDArray[int]
+IntArray = np.typing.NDArray[np.int64 | np.int32]
+IntArrayLike = np.typing.NDArray[np.int64 | np.int32] | list[int] | tuple[int, ...]
 FloatArray = np.typing.NDArray[np.float64]
 ComplexArray = np.typing.NDArray[np.complex128]
 
@@ -232,13 +232,6 @@ def normalize_fractions(f: FloatArray) -> FloatArray:
     """Normalize fractions by clipping to [0, 1] range and scale to norm 1"""
     f = np.clip(f, 0, 1)
     return f / sum(f)
-
-
-if __name__ == "__main__":  # pragma: no cover
-    print(counts2dense({"1 0": 1.0}, 2))
-    print(counts2fractions({"11": 20, "00": 30}))
-    print(counts2fractions([{"11": 20, "00": 30}]))
-    print(dense2sparse([2, 0, 4, 2]))  # noqa
 
 
 def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
