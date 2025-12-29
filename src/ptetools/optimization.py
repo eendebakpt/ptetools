@@ -228,6 +228,7 @@ class OptimizerCallback:
 
     def lmfit_callback(self, parameters, iteration, residual, *args, **kws):  # pragma: no cover
         """Callback method for lmfit optimizers"""
+        del kws
         if self._residual_fitting:
             residual = cast(float, np.linalg.norm(residual))
 

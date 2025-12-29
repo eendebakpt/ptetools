@@ -229,7 +229,7 @@ def tilefigs(
         else:
             try:
                 fignum = f.fig.number
-            except BaseException:
+            except BaseException:  # noqa
                 fignum = -1
         if not plt.fignum_exists(fignum) and verbose >= 2:
             print(f"tilefigs: f {f} fignum: {str(fignum)}")
@@ -385,14 +385,6 @@ def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs)
             plt.draw()
     plt.pause(1e-3)
     return xx
-
-
-if __name__ == "__main__" and 0:  # pragma: no cover
-    plt.figure(10)
-    plt.clf()
-    plt.plot([0, 1, 2, 3], [0, 3, 1, 3], ".-")
-    plt.draw()
-    x = ginput(7)
 
 
 def setWindowRectangle(  # pragma: no cover
@@ -650,9 +642,9 @@ def decompose_projective_transformation(
     if np.abs(np.linalg.det(A)) < 4 * eps:
         print("decompose_projective_transformation: part A of matrix is (near) singular")
 
-    sRK = A - np.array(t).dot(np.array(v.T))
+    s_rk = A - np.array(t).dot(np.array(v.T))
     # upper left block of H*inv(Hprojective)
-    R, K = np.linalg.qr(sRK)
+    R, K = np.linalg.qr(s_rk)
     K = np.asarray(K)
     R = np.asarray(R)
 
