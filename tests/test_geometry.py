@@ -15,4 +15,4 @@ class TestGeometryOperations(unittest.TestCase):
         np.testing.assert_almost_equal(angle_mean([0.0, 0.123], [0.0, 1.0]), 0.123)
 
         np.testing.assert_almost_equal(angle_mean([0.0, np.pi / 2], [0.5, 0.5]), np.pi / 4)
-        np.testing.assert_almost_equal(angle_mean([0.0, np.pi / 2], [0.25, 0.75]), 3 * np.pi / 4)
+        np.testing.assert_almost_equal(angle_mean([0.0, np.pi / 2], [0.25, 0.75]), 1.2490457723982544)
