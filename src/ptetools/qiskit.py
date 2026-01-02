@@ -29,8 +29,8 @@ from ptetools.tools import sorted_dictionary
 
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
-IntArray = np.typing.NDArray[int]
-IntArrayLike = np.typing.NDArray[int]
+IntArray = np.typing.NDArray[np.int64 | np.int32]
+IntArrayLike = np.typing.NDArray[np.int64 | np.int32] | list[int] | tuple[int, ...]
 FloatArray = np.typing.NDArray[np.float64]
 ComplexArray = np.typing.NDArray[np.complex128]
 
@@ -159,10 +159,19 @@ def largest_remainder_rounding(fractions: FloatArray, total: int) -> list[int]:
     return [int(x) for x in unround_numbers]
 
 
-def fractions2counts(f: list[CountsType] | CountsType, number_of_shots: int) -> list[CountsType] | CountsType:
-    def f2c(x, number_of_shots: int):
-        counts = largest_remainder_rounding(np.fromiter(x.values(), float), number_of_shots)
-        return dict(zip(x.keys(), counts))
+def fractions2counts(
+    f: list[CountsType] | CountsType, number_of_shots: int, integer_rounding: bool = True
+) -> list[CountsType] | CountsType:
+    if integer_rounding is True:
+
+        def f2c(x, number_of_shots: int):
+            counts = largest_remainder_rounding(np.fromiter(x.values(), float), number_of_shots)
+            return dict(zip(x.keys(), counts))
+    else:
+
+        def f2c(x, number_of_shots: int):
+            counts = {key: number_of_shots * value for key, value in x.items()}
+            return counts
 
     if isinstance(f, dict):
         return f2c(f, number_of_shots)
@@ -223,13 +232,6 @@ def normalize_fractions(f: FloatArray) -> FloatArray:
     """Normalize fractions by clipping to [0, 1] range and scale to norm 1"""
     f = np.clip(f, 0, 1)
     return f / sum(f)
-
-
-if __name__ == "__main__":  # pragma: no cover
-    print(counts2dense({"1 0": 1.0}, 2))
-    print(counts2fractions({"11": 20, "00": 30}))
-    print(counts2fractions([{"11": 20, "00": 30}]))
-    print(dense2sparse([2, 0, 4, 2]))  # noqa
 
 
 def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:

@@ -42,6 +42,14 @@ import scipy
 FloatArray = np.typing.NDArray[np.float64]
 
 
+def angle_mean(angles: FloatArray, weights: FloatArray | float = 1) -> float:
+    """Calculate circular mean of a set of angles"""
+    x = np.cos(angles) * weights
+    y = np.sin(angles) * weights
+    mean = np.atan2(y.mean(), x.mean())
+    return mean
+
+
 def robust_cost_function(x: FloatArray, thr: None | float | str, method: str = "L1") -> FloatArray | list[str]:
     """Robust cost function
 
@@ -167,7 +175,7 @@ def static_var(variable_name: str, value: Any) -> Callable:
 @static_var("monitorindex", -1)  # pragma: no cover
 def tilefigs(
     lst: list[int | plt.Figure],
-    geometry: Sequence[int] | None = (2, 2),
+    geometry: Sequence[int] | tuple[int] = (2, 2),
     ww: tuple[int] | list[int] | None = None,
     raisewindows: bool = False,
     tofront: bool = False,
@@ -216,12 +224,12 @@ def tilefigs(
             continue
         if isinstance(f, matplotlib.figure.Figure):
             fignum = f.number  # type: ignore
-        elif isinstance(f, int | np.int32 | np.int64):
+        elif isinstance(f, int | np.integer):
             fignum = f
         else:
             try:
                 fignum = f.fig.number
-            except BaseException:
+            except BaseException:  # noqa
                 fignum = -1
         if not plt.fignum_exists(fignum) and verbose >= 2:
             print(f"tilefigs: f {f} fignum: {str(fignum)}")
@@ -327,7 +335,7 @@ class attribute_context:
         if attrs is None:
             attrs = {}
         self.kwargs = attrs | kwargs
-        self.original = None
+        self.original: None | dict[str, Any] = None
 
     def __enter__(self) -> "attribute_context":
         self.original = {key: getattr(self.obj, key) for key in self.kwargs}
@@ -342,6 +350,7 @@ class attribute_context:
         exc_val: BaseException | None,
         exc_traceback: TracebackType | None,
     ) -> Literal[False]:
+        assert self.original is not None
         for key, value in self.original.items():
             setattr(self.obj, key, value)
         self.original = None
@@ -376,14 +385,6 @@ def ginput(number_of_points=1, marker: str | None = ".", linestyle="", **kwargs)
             plt.draw()
     plt.pause(1e-3)
     return xx
-
-
-if __name__ == "__main__" and 0:  # pragma: no cover
-    plt.figure(10)
-    plt.clf()
-    plt.plot([0, 1, 2, 3], [0, 3, 1, 3], ".-")
-    plt.draw()
-    x = ginput(7)
 
 
 def setWindowRectangle(  # pragma: no cover
@@ -600,7 +601,7 @@ def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
     if xx.size > 0:
         ww = cv2.perspectiveTransform(xx, H)
         ww = ww.reshape((-1, kout)).transpose()
-        return ww
+        return ww  # type: ignore
     else:
         return copy.copy(x)
 
@@ -641,9 +642,9 @@ def decompose_projective_transformation(
     if np.abs(np.linalg.det(A)) < 4 * eps:
         print("decompose_projective_transformation: part A of matrix is (near) singular")
 
-    sRK = A - np.array(t).dot(np.array(v.T))
+    s_rk = A - np.array(t).dot(np.array(v.T))
     # upper left block of H*inv(Hprojective)
-    R, K = np.linalg.qr(sRK)
+    R, K = np.linalg.qr(s_rk)
     K = np.asarray(K)
     R = np.asarray(R)
 

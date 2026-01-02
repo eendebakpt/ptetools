@@ -91,7 +91,7 @@ lint.ignore = [
            "E712" # https://github.com/astral-sh/ruff/issues/4560
         ]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 
 lint.per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
@@ -101,3 +101,8 @@ lint.per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://g
 mypy_path="./src"
 ignore_missing_imports = true
 exclude = "(.*/untitled.*|.*/debug_.*.py|.*/develop_.*.py)"
+
+
+[tool.ty.rules]
+unresolved-import = "ignore"
+
