@@ -42,4 +42,4 @@ jobs:
         coverage report -m
     - name: Test with ty
       run: |
-        ty check src\
+        uvx ty check src\
