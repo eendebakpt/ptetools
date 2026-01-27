@@ -202,8 +202,8 @@ class TestQiskit(unittest.TestCase):
         choi_qobj = qutip.core.superop_reps.to_choi(s)
         choi = choi_qobj.full()
 
-        Ur = choi_to_unitary(choi)
-        IC = Ur @ X.full().conjugate().T
+        unitary = choi_to_unitary(choi)
+        IC = unitary @ X.full().conjugate().T
         IC = np.exp(-np.angle(IC[0, 0]) * 1j) * IC
         np.testing.assert_almost_equal(IC, np.eye(IC.shape[0]))
 
