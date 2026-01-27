@@ -12,8 +12,8 @@ def starmon5_backend(backend_name: str = "Starmon-5", number_of_shots: int | Non
     Returns:
         Tuple with backend name and backend
     """
-    from quantuminspire.credentials import get_token_authentication, load_account  # ty: ignore
-    from quantuminspire.qiskit import QI  # ty: ignore
+    from quantuminspire.credentials import get_token_authentication, load_account
+    from quantuminspire.qiskit import QI
 
     authentication = get_token_authentication(load_account())
 
@@ -47,8 +47,8 @@ if __name__ == "__main__":  # pragma: no cover
 
 # %%
 def report_qi_status():  # pragma: no cover
-    from quantuminspire.api import QuantumInspireAPI  # ty: ignore
-    from quantuminspire.credentials import get_token_authentication, load_account  # ty: ignore
+    from quantuminspire.api import QuantumInspireAPI
+    from quantuminspire.credentials import get_token_authentication, load_account
     from rich import print as rprint
 
     QI_URL = r"https://api.quantum-inspire.com"

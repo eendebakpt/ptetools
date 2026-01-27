@@ -25,8 +25,6 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
 from qutip import Qobj
 
-from ptetools.tools import sorted_dictionary
-
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
 IntArray = np.typing.NDArray[np.int64 | np.int32]
@@ -127,14 +125,6 @@ if __name__ == "__main__":  # pragma: no cover
 # %%
 
 
-@overload
-def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]: ...
-
-
-@overload
-def counts2fractions(counts: CountsType) -> FractionsType: ...
-
-
 def largest_remainder_rounding(fractions: FloatArray, total: int) -> list[int]:
     """Largest remainder rounding algorithm
 
@@ -189,16 +179,28 @@ if __name__ == "__main__":  # pragma: no cover
     assert fractions2counts(fractions, 1024) == {0: 103, 1: 823, 2: 98}
 
 
-def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
+@overload
+def counts2fractions(counts: CountsType) -> FractionsType: ...
+
+
+@overload
+def counts2fractions(counts: FractionsType) -> FractionsType: ...
+
+
+@overload
+def counts2fractions(counts: Sequence[CountsType | FractionsType]) -> list[FractionsType]: ...
+
+
+def counts2fractions(
+    counts: CountsType | FractionsType | Sequence[CountsType | FractionsType],
+) -> FractionsType | list[FractionsType]:
     """Convert list of counts to list of fractions"""
     if isinstance(counts, Sequence):
         return [counts2fractions(c) for c in counts]  # ty: ignore
-    total = sum(counts.values())  # ty: ignore
-    if total == 0:
-        # corner case with no selected shots
-        total = 1
+    total = sum(counts.values())
+    total = total or 1  # corner case with no selected shots
 
-    return sorted_dictionary({k: float(v / total) for k, v in counts.items()})  # ty: ignore
+    return {k: float(counts[k] / total) for k in sorted(counts)}
 
 
 def normalize_probability(probabilities: FloatArray) -> FloatArray:
@@ -252,13 +254,13 @@ def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]
         state = state.compose(cl, (0,))
     else:
         raise NotImplementedError(f"number_of_qubits {number_of_qubits}")
-    return state, cl_index  # ty: ignore
+    return state, cl_index
 
 
 # %%
 
 
-class RemoveGateByName(TransformationPass):  # type: ignore
+class RemoveGateByName(TransformationPass):
     """Return a circuit with all gates with specified name removed.
 
     This transformation is not semantics preserving.
@@ -273,7 +275,7 @@ class RemoveGateByName(TransformationPass):  # type: ignore
         super().__init__(*args, **kwargs)
         self._gate_name = gate_name
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
         """Run the RemoveGateByName pass on `dag`."""
 
         dag.remove_all_ops_named(self._gate_name)
@@ -285,7 +287,7 @@ class RemoveGateByName(TransformationPass):  # type: ignore
         return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
 
 
-class RemoveZeroDelayGate(TransformationPass):  # type: ignore
+class RemoveZeroDelayGate(TransformationPass):
     """Return a circuit with all zero duration delay gates removed.
 
     This transformation is not semantics preserving.
@@ -300,7 +302,7 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
         self._empty_dag1 = qiskit.converters.circuit_to_dag(QuantumCircuit(1))
         super().__init__(*args, **kwargs)
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
         """Run the RemoveZeroDelayGate pass on `dag`."""
 
         for node in dag.op_nodes():
@@ -350,7 +352,7 @@ def delay_gate(duration: float, dt: float, round_dt: bool) -> qiskit.circuit.ope
     return Delay(n, unit="dt")
 
 
-class ModifyDelayGate(TransformationPass):  # type: ignore
+class ModifyDelayGate(TransformationPass):
     """Return a circuit with small rotation gates removed."""
 
     def __init__(self, dt: float = 20e-9, round: bool = True) -> None:
@@ -360,7 +362,7 @@ class ModifyDelayGate(TransformationPass):  # type: ignore
         self.round = round
         self.dt = dt
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
         """Run the pass on `dag`.
         Args:
             dag: input dag.

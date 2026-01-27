@@ -144,7 +144,7 @@ class OptimizerCallback:
     def data(self) -> pd.DataFrame:
         """Return data gathered by callback"""
 
-        df = pd.DataFrame(self._data, columns=self._column_names)  # type: ignore
+        df = pd.DataFrame(self._data, columns=self._column_names)
 
         return df
 
@@ -192,7 +192,7 @@ class OptimizerCallback:
         if ax is None:
             ax = plt.gca()
 
-        self.data.plot("iteration", "residual", ax=ax, **kwargs)  # type: ignore
+        self.data.plot("iteration", "residual", ax=ax, **kwargs)
         dt = self.optimization_time()
         residual = self.data["residual"].iloc[-1]
         ax.set_title(f"Optimization total time {dt:.2f} [s], residual {residual:.2g}")

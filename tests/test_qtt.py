@@ -3,15 +3,19 @@ import unittest
 import numpy as np
 
 from ptetools._qtt import (
+    angle_mean,
     decompose_projective_transformation,
+    dehom,
     hom,
     mean_of_directions,
+    pg_affine_to_homogeneous,
     pg_rotation2homogeneous,
     pg_rotx,
     pg_rotz,
     pg_scaling,
     pg_transl2homogeneous,
     projective_transformation,
+    static_var,
 )
 
 
@@ -98,3 +102,68 @@ class TestGeometryOperations(unittest.TestCase):
         angle = mean_of_directions(directions)
         angle = np.mod(angle, np.pi)
         self.assertAlmostEqual(angle, np.pi / 2)
+
+    def test_angle_mean(self):
+        angles = np.array([0.0, 0.1, -0.1])
+        mean = angle_mean(angles)
+        self.assertAlmostEqual(mean, 0.0, places=5)
+
+        angles = np.array([0.0, np.pi / 2])
+        mean = angle_mean(angles)
+        self.assertAlmostEqual(mean, np.pi / 4, places=5)
+
+        angles = np.array([0.0, 0.0, 0.0])
+        mean = angle_mean(angles)
+        self.assertAlmostEqual(mean, 0.0, places=5)
+
+        angles = np.array([0.0, np.pi, np.pi])
+        weights = np.array([1.0, 1.0, 1.0])
+        mean = angle_mean(angles, weights)
+        self.assertAlmostEqual(np.abs(mean), np.pi, places=1)
+
+    def test_dehom(self):
+        pts_hom = np.array([[2, 4, 6], [4, 8, 12], [2, 2, 2]])
+        expected = np.array([[1, 2, 3], [2, 4, 6]])
+        np.testing.assert_array_almost_equal(dehom(pts_hom), expected)
+
+        pts_hom = np.array([[1, 0], [0, 1], [1, 1]])
+        expected = np.array([[1, 0], [0, 1]])
+        np.testing.assert_array_almost_equal(dehom(pts_hom), expected)
+
+    def test_pg_affine_to_homogeneous(self):
+        affine = np.array([[2.0]])
+        H = pg_affine_to_homogeneous(affine)
+        expected = np.array([[2.0, 0.0], [0.0, 1.0]])
+        np.testing.assert_array_almost_equal(H, expected)
+
+        affine = np.array([[1, 0], [0, 2]])
+        H = pg_affine_to_homogeneous(affine)
+        expected = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 1]])
+        np.testing.assert_array_almost_equal(H, expected)
+
+        R = pg_rotx(0.5)
+        H = pg_affine_to_homogeneous(R)
+        np.testing.assert_array_almost_equal(H[:3, :3], R)
+        np.testing.assert_array_almost_equal(H[3, :], [0, 0, 0, 1])
+
+    def test_pg_transl2homogeneous(self):
+        tr = [1, 2]
+        H = pg_transl2homogeneous(tr)
+        expected = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 2.0], [0.0, 0.0, 1.0]])
+        np.testing.assert_array_almost_equal(H, expected)
+
+        tr = [3, 4, 5]
+        H = pg_transl2homogeneous(tr)
+        self.assertEqual(H.shape, (4, 4))
+        np.testing.assert_array_almost_equal(H[:3, 3], [3, 4, 5])
+
+    def test_static_var(self):
+        @static_var("counter", 0)
+        def increment():
+            increment.counter += 1
+            return increment.counter
+
+        self.assertEqual(increment.counter, 0)
+        self.assertEqual(increment(), 1)
+        self.assertEqual(increment(), 2)
+        self.assertEqual(increment.counter, 2)

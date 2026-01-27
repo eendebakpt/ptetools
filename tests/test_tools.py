@@ -16,8 +16,10 @@ from ptetools.tools import (
     array2latex,
     attribute_context,
     cprint,
+    flatten,
     fmt_dict,
     interleaved_benchmark,
+    is_spyder_environment,
     logging_context,
     make_blocks,
     measure_time,
@@ -175,6 +177,61 @@ def test_robust_cost_function():
     np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "L1"), [0.0, 0.1, 0.5, 0.5])
     np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "L2"), [0.0, 0.01, 0.25, 0.5])
     np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "cauchy"), [0.0, 0.03922071, 0.69314718, 1.60943791])
+
+
+def test_is_spyder_environment():
+    import os
+
+    result = is_spyder_environment()
+    assert isinstance(result, bool)
+
+    original_env = os.environ.get("SPY_TESTING")
+    try:
+        os.environ["SPY_TESTING"] = "1"
+        assert is_spyder_environment() is True
+
+        if "SPY_TESTING" in os.environ:
+            del os.environ["SPY_TESTING"]
+        assert is_spyder_environment() is False
+    finally:
+        if original_env is not None:
+            os.environ["SPY_TESTING"] = original_env
+        elif "SPY_TESTING" in os.environ:
+            del os.environ["SPY_TESTING"]
+
+
+def test_flatten():
+    assert flatten([[1, 2], [3, 4], [10]]) == [1, 2, 3, 4, 10]
+    assert flatten([[], [1], []]) == [1]
+    assert flatten([]) == []
+    assert flatten([[1, 2, 3]]) == [1, 2, 3]
+    assert flatten([["a", "b"], ["c"]]) == ["a", "b", "c"]
+
+
+def test_robust_cost_function_none_threshold():
+    x = np.array([1.0, 2.0, 3.0])
+    result = robust_cost_function(x, thr=None)
+    np.testing.assert_array_equal(result, x)
+
+
+def test_robust_cost_function_methods():
+    x = np.array([0.5, 1.0, 1.5, 2.0])
+    thr = 1.0
+
+    result_bz = robust_cost_function(x, thr, "BZ")
+    assert result_bz is not None
+
+    result_bz0 = robust_cost_function(x, thr, "BZ0")
+    assert result_bz0 is not None
+
+    result_cg = robust_cost_function(x, thr, "cg")
+    assert result_cg is not None
+
+    result_huber = robust_cost_function(x, thr, "huber")
+    assert result_huber is not None
+
+    with pytest.raises(ValueError):
+        robust_cost_function(x, thr, "invalid_method")
 
 
 if __name__ == "__main__":  # pragma: no cover
