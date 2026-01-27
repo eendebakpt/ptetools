@@ -144,12 +144,12 @@ def monitorSizes(verbose: int = 0) -> list[tuple[int]]:  # pragma: no cover
     """
     import qtpy.QtWidgets  # lazy import
 
-    _ = qtpy.QtWidgets.QApplication.instance()  # type: ignore
-    _qd = qtpy.QtWidgets.QDesktopWidget()  # type: ignore
+    _ = qtpy.QtWidgets.QApplication.instance()
+    _qd = qtpy.QtWidgets.QDesktopWidget()
 
     nmon = _qd.screenCount()
     monitor_rectangles = [_qd.screenGeometry(ii) for ii in range(nmon)]
-    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]  # type: ignore
+    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]
 
     if verbose:
         for ii, w in enumerate(monitor_sizes):
@@ -209,13 +209,13 @@ def tilefigs(
     if window is not None:
         ww = window
 
-    w = ww[2] / geometry[0]  # type: ignore
-    h = ww[3] / geometry[1]  # type: ignore
+    w = ww[2] / geometry[0]
+    h = ww[3] / geometry[1]
 
     if isinstance(lst, int):
         lst = [lst]
-    elif isinstance(lst, np.ndarray):  # ty: ignore
-        lst = lst.flatten().astype(int)  # ty: ignore
+    elif isinstance(lst, np.ndarray):
+        lst = lst.flatten().astype(int)
 
     if verbose:
         print(f"tilefigs: ww {ww}, w {w} h {h}")
@@ -223,7 +223,7 @@ def tilefigs(
         if f is None:
             continue
         if isinstance(f, matplotlib.figure.Figure):
-            fignum = f.number  # type: ignore
+            fignum = f.number
         elif isinstance(f, int | np.integer):
             fignum = f
         else:
@@ -237,18 +237,18 @@ def tilefigs(
         iim = ii % np.prod(geometry)
         ix = iim % geometry[0]
         iy = int(np.floor(float(iim) / geometry[0]))
-        x: int = int(ww[0]) + int(ix * w)  # type: ignore
-        y: int = int(ww[1]) + int(iy * h)  # type: ignore
+        x: int = int(ww[0]) + int(ix * w)
+        y: int = int(ww[1]) + int(iy * h)
         if be == "WXAgg" or be == "WX":
-            fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
-            fig.canvas.manager.window.SetSize((w, h))  # type: ignore
+            fig.canvas.manager.window.SetPosition((x, y))
+            fig.canvas.manager.window.SetSize((w, h))
         elif be == "agg":
-            fig.canvas.manager.window.SetPosition((x, y))  # type: ignore
-            fig.canvas.manager.window.resize(w, h)  # type: ignore
+            fig.canvas.manager.window.SetPosition((x, y))
+            fig.canvas.manager.window.resize(w, h)
         elif be in ("Qt4Agg", "QT4", "QT5Agg", "Qt5Agg", "QtAgg", "qtagg"):
             # assume Qt canvas
             try:
-                fig.canvas.manager.window.setGeometry(x, y + y_offset, int(w), int(h))  # type: ignore
+                fig.canvas.manager.window.setGeometry(x, y + y_offset, int(w), int(h))
             except Exception as e:
                 print(
                     "problem with window manager: ",
@@ -258,7 +258,7 @@ def tilefigs(
         else:
             raise NotImplementedError(f"unknown backend {be}")
         if raisewindows:
-            mngr.window.raise_()  # type: ignore
+            mngr.window.raise_()
         if tofront:
             plt.figure(f)
 
@@ -408,22 +408,22 @@ def setWindowRectangle(  # pragma: no cover
         plt.figure(fig)
 
     if y is None:
-        x, y, w, h = x  # type: ignore
+        x, y, w, h = x
     if mngr is None:
         mngr = plt.get_current_fig_manager()
     be = matplotlib.get_backend()
     if be == "WXAgg":
-        mngr.canvas.manager.window.SetPosition((x, y))  # ty: ignore
-        mngr.canvas.manager.window.SetSize((w, h))  # ty: ignore
+        mngr.canvas.manager.window.SetPosition((x, y))
+        mngr.canvas.manager.window.SetSize((w, h))
     elif be == "TkAgg":
-        _ = mngr.canvas.manager.window.wm_geometry(f"{w}x{h}x+{x}+{y}")  # type: ignore
+        _ = mngr.canvas.manager.window.wm_geometry(f"{w}x{h}x+{x}+{y}")
     elif be == "module://IPython.kernel.zmq.pylab.backend_inline":
         pass
     else:
         # assume Qt canvas
-        mngr.canvas.manager.window.move(x, y)  # ty: ignore
-        mngr.canvas.manager.window.resize(w, h)  # ty: ignore
-        mngr.canvas.manager.window.setGeometry(x, y, w, h)  # ty: ignore
+        mngr.canvas.manager.window.move(x, y)
+        mngr.canvas.manager.window.resize(w, h)
+        mngr.canvas.manager.window.setGeometry(x, y, w, h)
 
 
 @contextlib.contextmanager
@@ -601,7 +601,7 @@ def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
     if xx.size > 0:
         ww = cv2.perspectiveTransform(xx, H)
         ww = ww.reshape((-1, kout)).transpose()
-        return ww  # type: ignore
+        return ww
     else:
         return copy.copy(x)
 

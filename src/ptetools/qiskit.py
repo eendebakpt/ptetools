@@ -192,13 +192,13 @@ if __name__ == "__main__":  # pragma: no cover
 def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
     """Convert list of counts to list of fractions"""
     if isinstance(counts, Sequence):
-        return [counts2fractions(c) for c in counts]  # ty: ignore
-    total = sum(counts.values())  # ty: ignore
+        return [counts2fractions(c) for c in counts]
+    total = sum(counts.values())
     if total == 0:
         # corner case with no selected shots
         total = 1
 
-    return sorted_dictionary({k: float(v / total) for k, v in counts.items()})  # ty: ignore
+    return sorted_dictionary({k: float(v / total) for k, v in counts.items()})
 
 
 def normalize_probability(probabilities: FloatArray) -> FloatArray:
@@ -252,13 +252,13 @@ def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]
         state = state.compose(cl, (0,))
     else:
         raise NotImplementedError(f"number_of_qubits {number_of_qubits}")
-    return state, cl_index  # ty: ignore
+    return state, cl_index
 
 
 # %%
 
 
-class RemoveGateByName(TransformationPass):  # type: ignore
+class RemoveGateByName(TransformationPass):
     """Return a circuit with all gates with specified name removed.
 
     This transformation is not semantics preserving.
@@ -273,7 +273,7 @@ class RemoveGateByName(TransformationPass):  # type: ignore
         super().__init__(*args, **kwargs)
         self._gate_name = gate_name
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
         """Run the RemoveGateByName pass on `dag`."""
 
         dag.remove_all_ops_named(self._gate_name)
@@ -285,7 +285,7 @@ class RemoveGateByName(TransformationPass):  # type: ignore
         return f"<{name} at 0x{id(self):x}: gate {self._gate_name}"
 
 
-class RemoveZeroDelayGate(TransformationPass):  # type: ignore
+class RemoveZeroDelayGate(TransformationPass):
     """Return a circuit with all zero duration delay gates removed.
 
     This transformation is not semantics preserving.
@@ -300,7 +300,7 @@ class RemoveZeroDelayGate(TransformationPass):  # type: ignore
         self._empty_dag1 = qiskit.converters.circuit_to_dag(QuantumCircuit(1))
         super().__init__(*args, **kwargs)
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
         """Run the RemoveZeroDelayGate pass on `dag`."""
 
         for node in dag.op_nodes():
@@ -350,7 +350,7 @@ def delay_gate(duration: float, dt: float, round_dt: bool) -> qiskit.circuit.ope
     return Delay(n, unit="dt")
 
 
-class ModifyDelayGate(TransformationPass):  # type: ignore
+class ModifyDelayGate(TransformationPass):
     """Return a circuit with small rotation gates removed."""
 
     def __init__(self, dt: float = 20e-9, round: bool = True) -> None:
@@ -360,7 +360,7 @@ class ModifyDelayGate(TransformationPass):  # type: ignore
         self.round = round
         self.dt = dt
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:  # type: ignore # qiskit upstream issue
+    def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
         """Run the pass on `dag`.
         Args:
             dag: input dag.

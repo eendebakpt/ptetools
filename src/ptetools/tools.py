@@ -412,7 +412,7 @@ _short_atomic_types = frozenset({float, int, str, bool, types.NoneType})
 def add_rich_repr(cls):
     """Add pretty representation method to a class using rich"""
 
-    cls._repr_pretty_ = _repr_pretty_rich_  # ty: ignore
+    cls._repr_pretty_ = _repr_pretty_rich_
     return cls
 
 
