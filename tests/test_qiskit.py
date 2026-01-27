@@ -8,13 +8,17 @@ from ptetools.qiskit import (
     RemoveGateByName,
     RemoveZeroDelayGate,
     bitlist_to_int,
+    choi_to_unitary,
     circuit2matrix,
     counts2dense,
     counts2fractions,
+    delay_gate,
     dense2sparse,
     fractions2counts,
     generate_bitstring_tuples,
     generate_bitstrings,
+    generate_state_labels,
+    index2bitstring,
     invert_permutation,
     largest_remainder_rounding,
     normalize_fractions,
@@ -154,6 +158,65 @@ class TestQiskit(unittest.TestCase):
         np.testing.assert_array_equal(normalize_probability([0, 0.99]), [0, 1])
         np.testing.assert_array_equal(normalize_probability([-0.01, 1.0099]), [0, 1])
         assert sum(normalize_probability([1.2342, 123.321, -0.001])) == 1
+
+    def test_index2bitstring(self):
+        assert index2bitstring(0, 2) == "00"
+        assert index2bitstring(1, 2) == "01"
+        assert index2bitstring(2, 2) == "10"
+        assert index2bitstring(3, 2) == "11"
+        assert index2bitstring(5, 4) == "0101"
+        assert index2bitstring(15, 4) == "1111"
+
+    def test_generate_state_labels(self):
+        labels_latex = generate_state_labels(2, latex=True)
+        assert labels_latex == [r"$|00\rangle$", r"$|01\rangle$", r"$|10\rangle$", r"$|11\rangle$"]
+
+        labels_plain = generate_state_labels(2, latex=False)
+        assert labels_plain == ["|00>", "|01>", "|10>", "|11>"]
+
+        labels_1qubit = generate_state_labels(1)
+        assert len(labels_1qubit) == 2
+
+    def test_delay_gate(self):
+        gate = delay_gate(100e-9, 20e-9, round_dt=True)
+        assert gate.duration == 5
+        assert gate.unit == "dt"
+
+        gate_no_round = delay_gate(100e-9, 20e-9, round_dt=False)
+        assert gate_no_round.duration == 100e-9 / 20e-9
+
+    def test_fractions2counts_no_rounding(self):
+        fractions = {0: 0.1, 1: 0.8, 2: 0.1}
+        counts = fractions2counts(fractions, 100, integer_rounding=False)
+        assert counts == {0: 10.0, 1: 80.0, 2: 10.0}
+
+        fractions_list = [{0: 0.5, 1: 0.5}, {0: 0.25, 1: 0.75}]
+        counts_list = fractions2counts(fractions_list, 100, integer_rounding=False)
+        assert counts_list == [{0: 50.0, 1: 50.0}, {0: 25.0, 1: 75.0}]
+
+    def test_choi_to_unitary(self):
+        import qutip
+
+        X = qutip.sigmax()
+        s = qutip.core.superop_reps.to_super(X)
+        choi_qobj = qutip.core.superop_reps.to_choi(s)
+        choi = choi_qobj.full()
+
+        Ur = choi_to_unitary(choi)
+        IC = Ur @ X.full().conjugate().T
+        IC = np.exp(-np.angle(IC[0, 0]) * 1j) * IC
+        np.testing.assert_almost_equal(IC, np.eye(IC.shape[0]))
+
+    def test_counts2fractions_list(self):
+        counts_list = [{"0": 50, "1": 50}, {"0": 25, "1": 75}]
+        fractions_list = counts2fractions(counts_list)
+        assert fractions_list[0] == {"0": 0.5, "1": 0.5}
+        assert fractions_list[1] == {"0": 0.25, "1": 0.75}
+
+    def test_counts2fractions_zero_total(self):
+        counts = {"0": 0, "1": 0}
+        fractions = counts2fractions(counts)
+        assert fractions == {"0": 0.0, "1": 0.0}
 
 
 if __name__ == "__main__":
