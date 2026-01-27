@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 import numpy as np
 
@@ -19,6 +20,7 @@ from ptetools._qtt import (
 )
 
 
+# %%
 class TestGeometryOperations(unittest.TestCase):
     def test_hom(self):
         pts = np.array([[1, 0], [1, 1], [2, 2]]).T
@@ -26,6 +28,7 @@ class TestGeometryOperations(unittest.TestCase):
         np.testing.assert_array_almost_equal(hom(pts), expected)
 
     def test_projective_transformation(self):
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
         x = np.array([[1.0, 0], [0, 2]])
 
         H = pg_transl2homogeneous([1.0, -1])

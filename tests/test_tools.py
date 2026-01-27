@@ -122,7 +122,7 @@ class TestTools(unittest.TestCase):
 
         with redirect_stdout(io.StringIO()) as f:
             _ = interleaved_benchmark(method, method)
-        assert "per loop" in f.getvalue()
+        assert "gain" in f.getvalue()
 
         def method_kwargs(*args):
             return len(args)
@@ -137,9 +137,14 @@ class TestTools(unittest.TestCase):
             _ = interleaved_benchmark(method_kwargs, method_kwargs, a="alpha")
 
     def test_array2latex(self):
+        array = np.array([[1, 2, 3]])
         for mode in ["tabular", "psmallmatrix", "pmatrix"]:
-            ltx = array2latex(np.array([[1, 2, 3]]), header=True, mode=mode, comment="hi")
+            ltx = array2latex(array, header=True, mode=mode, comment="hi")
         assert mode in ltx
+        ltx = array2latex(array, header=True, mode=mode, comment=["hi", "there"])
+        assert "hi" in ltx
+        with pytest.raises(ValueError):
+            _ = array2latex(array, mode="nonsense")
 
 
 def test_attribute_context():

@@ -247,139 +247,56 @@ def interleaved_benchmark(
     target_duration: float = 1.0,
     **kwargs,
 ):
+    # Warmup and estimate time per call
     t0 = time.perf_counter()
-    for ii in range(1, 30):
+    for ii in range(1, 200):
         func(*args, **kwargs)
         dt = time.perf_counter() - t0
         if dt > 0.1:
             break
-    if dt < 0.01:
-        n_inner = 50
-        t0 = time.perf_counter()
-        for ii in range(1, 60):
-            for ii in range(n_inner):
-                func(*args, **kwargs)
-            dt = time.perf_counter() - t0
-            if dt > 0.1:
-                break
-
-        dt /= n_inner
     dt = dt / ii
 
-    target_duration // (2 * dt)
-
+    # Calculate iterations, rounded to nice number (power of 10 or 5x power of 10)
     number_of_iterations = max(1, min(10_000_000, int(target_duration // (2 * dt))))
-    # round to power of 10 or half of power of 10
     log_ten = math.log10(number_of_iterations)
     log_ten = (log_ten // 1) + (0 if (log_ten % 1) < math.log(5) else math.log(5))
     number_of_iterations = int(10**log_ten)
 
-    dt1 = 0
-    dt2 = 0
-
-    if number_of_iterations > 1_000:
-        blocksize = 200
-    else:
-        blocksize = 1
+    blocksize = 200 if number_of_iterations > 1_000 else 1
+    dt1 = dt2 = 0
 
     if kwargs:
-        if blocksize > 1:
-            for ii in range(number_of_iterations // blocksize):
-                t0 = time.perf_counter()
-                for _ in repeat(None, blocksize):
-                    func(*args, **kwargs)
-                dt1 += time.perf_counter() - t0
-
-                t0 = time.perf_counter()
-                for _ in repeat(None, blocksize):
-                    func2(*args, **kwargs)
-                dt2 += time.perf_counter() - t0
-        else:  # pragma: no cover
-            for ii in range(number_of_iterations):
-                t0 = time.perf_counter()
+        for _ in range(number_of_iterations // blocksize):
+            t0 = time.perf_counter()
+            for _ in repeat(None, blocksize):
                 func(*args, **kwargs)
-                dt1 += time.perf_counter() - t0
+            dt1 += time.perf_counter() - t0
 
-                t0 = time.perf_counter()
+            t0 = time.perf_counter()
+            for _ in repeat(None, blocksize):
                 func2(*args, **kwargs)
-                dt2 += time.perf_counter() - t0
+            dt2 += time.perf_counter() - t0
     else:
-        if len(args) == 0:
-            if blocksize > 1:
-                for ii in range(number_of_iterations // blocksize):
-                    t0 = time.perf_counter()
-                    for _ in repeat(None, blocksize):
-                        func()
-                    dt1 += time.perf_counter() - t0
+        for _ in range(number_of_iterations // blocksize):
+            t0 = time.perf_counter()
+            for _ in repeat(None, blocksize):
+                func(*args)
+            dt1 += time.perf_counter() - t0
 
-                    t0 = time.perf_counter()
-                    for _ in repeat(None, blocksize):
-                        func2()
-                    dt2 += time.perf_counter() - t0
-            else:  # pragma: no cover
-                for ii in range(number_of_iterations):
-                    t0 = time.perf_counter()
-                    func()
-                    dt1 += time.perf_counter() - t0
-
-                    t0 = time.perf_counter()
-                    func2()
-                    dt2 += time.perf_counter() - t0
-        elif len(args) == 1:
-            arg = args[0]
-
-            if blocksize > 1:
-                for ii in range(number_of_iterations // blocksize):
-                    t0 = time.perf_counter()
-                    for _ in repeat(None, blocksize):
-                        func(arg)
-                    dt1 += time.perf_counter() - t0
-
-                    t0 = time.perf_counter()
-                    for _ in repeat(None, blocksize):
-                        func2(arg)
-                    dt2 += time.perf_counter() - t0
-            else:  # pragma: no cover
-                for ii in range(number_of_iterations):
-                    t0 = time.perf_counter()
-                    func(arg)
-                    dt1 += time.perf_counter() - t0
-
-                    t0 = time.perf_counter()
-                    func2(arg)
-                    dt2 += time.perf_counter() - t0
-        else:
-            if blocksize > 1:
-                for ii in range(number_of_iterations // blocksize):
-                    t0 = time.perf_counter()
-                    for _ in repeat(None, blocksize):
-                        func(*args)
-                    dt1 += time.perf_counter() - t0
-
-                    t0 = time.perf_counter()
-                    for _ in repeat(None, blocksize):
-                        func2(*args)
-                    dt2 += time.perf_counter() - t0
-            else:
-                for ii in range(number_of_iterations):
-                    t0 = time.perf_counter()
-                    func(*args)
-                    dt1 += time.perf_counter() - t0
-
-                    t0 = time.perf_counter()
-                    func2(*args)
-                    dt2 += time.perf_counter() - t0
+            t0 = time.perf_counter()
+            for _ in repeat(None, blocksize):
+                func2(*args)
+            dt2 += time.perf_counter() - t0
 
     gain = dt1 / dt2
     per_loop1 = (dt1 / number_of_iterations) * 1e6
     per_loop2 = (dt2 / number_of_iterations) * 1e6
 
-    # format...
     gain_txt = f"gain {gain:.2f} ({number_of_iterations} loops)"
     if per_loop1 < 1:
-        print(f"{per_loop1 * 1e3:.2f} ns ± ? μs per loop vs {per_loop2 * 1e3:.2f} ns, " + gain_txt)
+        print(f"{per_loop1 * 1e3:.2f} ns vs {per_loop2 * 1e3:.2f} ns, " + gain_txt)
     else:
-        print(f"{per_loop1:.2f} μs ± ? μs per loop vs {per_loop2:.2f} μs, " + gain_txt)
+        print(f"{per_loop1:.2f} μs vs {per_loop2:.2f} μs, " + gain_txt)
     return dt1, dt2
 
 
