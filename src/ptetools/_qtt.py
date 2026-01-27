@@ -149,7 +149,7 @@ def monitorSizes(verbose: int = 0) -> list[tuple[int]]:  # pragma: no cover
 
     nmon = _qd.screenCount()
     monitor_rectangles = [_qd.screenGeometry(ii) for ii in range(nmon)]
-    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]
+    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]  # ty: ignore
 
     if verbose:
         for ii, w in enumerate(monitor_sizes):
@@ -176,7 +176,7 @@ def static_var(variable_name: str, value: Any) -> Callable:
 def tilefigs(
     lst: list[int | plt.Figure],
     geometry: Sequence[int] | tuple[int] = (2, 2),
-    ww: tuple[int] | list[int] | None = None,
+    ww: tuple[int, ...] | list[int] | None = None,
     raisewindows: bool = False,
     tofront: bool = False,
     verbose: int = 0,
@@ -408,7 +408,7 @@ def setWindowRectangle(  # pragma: no cover
         plt.figure(fig)
 
     if y is None:
-        x, y, w, h = x
+        x, y, w, h = x  # ty: ignore
     if mngr is None:
         mngr = plt.get_current_fig_manager()
     be = matplotlib.get_backend()
@@ -608,7 +608,7 @@ def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
 
 def decompose_projective_transformation(
     H: FloatArray,
-) -> tuple[FloatArray, FloatArray, FloatArray, tuple[Any, Any, FloatArray, FloatArray]]:
+) -> tuple[FloatArray, FloatArray, FloatArray, tuple[Any, Any, FloatArray, FloatArray, FloatArray]]:
     """Decompose projective transformation
 
     H is decomposed as H = Hs * Ha * Hp with

@@ -25,8 +25,6 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
 from qutip import Qobj
 
-from ptetools.tools import sorted_dictionary
-
 CountsType = dict[str, int | float]
 FractionsType = dict[str, float]
 IntArray = np.typing.NDArray[np.int64 | np.int32]
@@ -127,14 +125,6 @@ if __name__ == "__main__":  # pragma: no cover
 # %%
 
 
-@overload
-def counts2fractions(counts: Sequence[CountsType]) -> list[FractionsType]: ...
-
-
-@overload
-def counts2fractions(counts: CountsType) -> FractionsType: ...
-
-
 def largest_remainder_rounding(fractions: FloatArray, total: int) -> list[int]:
     """Largest remainder rounding algorithm
 
@@ -189,16 +179,28 @@ if __name__ == "__main__":  # pragma: no cover
     assert fractions2counts(fractions, 1024) == {0: 103, 1: 823, 2: 98}
 
 
-def counts2fractions(counts: CountsType | Sequence[CountsType]) -> FractionsType | list[FractionsType]:
+@overload
+def counts2fractions(counts: CountsType) -> FractionsType: ...
+
+
+@overload
+def counts2fractions(counts: FractionsType) -> FractionsType: ...
+
+
+@overload
+def counts2fractions(counts: Sequence[CountsType | FractionsType]) -> list[FractionsType]: ...
+
+
+def counts2fractions(
+    counts: CountsType | FractionsType | Sequence[CountsType | FractionsType],
+) -> FractionsType | list[FractionsType]:
     """Convert list of counts to list of fractions"""
     if isinstance(counts, Sequence):
-        return [counts2fractions(c) for c in counts]
+        return [counts2fractions(c) for c in counts]  # ty: ignore
     total = sum(counts.values())
-    if total == 0:
-        # corner case with no selected shots
-        total = 1
+    total = total or 1  # corner case with no selected shots
 
-    return sorted_dictionary({k: float(v / total) for k, v in counts.items()})
+    return {k: float(counts[k] / total) for k in sorted(counts)}
 
 
 def normalize_probability(probabilities: FloatArray) -> FloatArray:
