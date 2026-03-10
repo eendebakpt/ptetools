@@ -117,7 +117,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     np.testing.assert_array_equal(invert_permutation([0, 1, 3, 2]), np.array([0, 1, 3, 2]))
 
-    counts = {"1110": 945, "0010": 7, "1011": 16}
+    counts: CountsType = {"1110": 945, "0010": 7, "1011": 16}
     permutation = [1, 0, 2, 3]
     assert permute_counts(counts, permutation) == {"1101": 945, "0001": 7, "1011": 16}
 

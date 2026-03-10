@@ -8,3 +8,13 @@ repos:
     - id: ruff-check
       args: [--fix, --exit-non-zero-on-fix]
     - id: ruff-format
+
+- repo: local
+  hooks:
+    - id: ty
+      name: ty
+      entry: uv run --no-project --with ty ty check src/
+      language: system
+      types: [python]
+      require_serial: true
+      pass_filenames: false
