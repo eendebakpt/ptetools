@@ -144,7 +144,7 @@ class OptimizerCallback:
     def data(self) -> pd.DataFrame:
         """Return data gathered by callback"""
 
-        df = pd.DataFrame(self._data, columns=self._column_names)
+        df = pd.DataFrame(self._data, columns=np.array(self._column_names))
 
         return df
 
