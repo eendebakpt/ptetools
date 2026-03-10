@@ -144,7 +144,7 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
     Example:
     >>> points = np.random.rand(2, 10)
     >>> fig=plt.figure(10); plt.clf()
-    >>> _ = plotPoints(points, '.'); _ = plotLabels(points)
+    >>> _ = plotLabels(points)
     """
 
     points = np.asarray(points)

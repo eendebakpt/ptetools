@@ -229,7 +229,7 @@ def tilefigs(
         else:
             try:
                 fignum = f.fig.number
-            except BaseException:  # noqa
+            except Exception:
                 fignum = -1
         if not plt.fignum_exists(fignum) and verbose >= 2:
             print(f"tilefigs: f {f} fignum: {str(fignum)}")
@@ -572,7 +572,7 @@ def pg_affine_to_homogeneous(affine_transform: FloatArray) -> FloatArray:
 
     Example
     -------
-    >>> pg_affine_to_homogeneousogeneous(np.array([[2.]]))
+    >>> pg_affine_to_homogeneous(np.array([[2.]]))
     array([[ 2.,  0.],
            [ 0.,  1.]])
 
@@ -596,7 +596,7 @@ def projective_transformation(H: FloatArray, x: FloatArray) -> FloatArray:
     kout = H.shape[0] - 1
     xx = x.transpose().reshape((-1, 1, k))
 
-    if xx.dtype is np.integer or xx.dtype == "int64":
+    if np.issubdtype(xx.dtype, np.integer):
         xx = xx.astype(np.float32)
     if xx.size > 0:
         ww = cv2.perspectiveTransform(xx, H)

@@ -36,7 +36,7 @@ ComplexArray = np.typing.NDArray[np.complex128]
 # %% Bit conversions
 
 
-def generate_bitstring_tuples(number_of_bits: int) -> Iterator[tuple[str]]:
+def generate_bitstring_tuples(number_of_bits: int) -> Iterator[tuple[int, ...]]:
     return itertools.product(*((0, 1),) * (number_of_bits))
 
 
@@ -80,14 +80,14 @@ def permute_bits(idx: int, permutation: Sequence[int]) -> int:
 
 def permute_string(string: str, permutation: Sequence[int]) -> str:
     """Permute string characters"""
-    permuted = [string[pidx] for idx, pidx in enumerate(permutation)]
+    permuted = [string[pidx] for pidx in permutation]
     return "".join(permuted)
 
 
 def permute_counts(counts: CountsType, permutation: Sequence[int]) -> CountsType:
     """Permute bits in a counts for fractions object
 
-    For the bits we use the Qiskit convetion: LSB has index zero
+    For the bits we use the Qiskit convention: LSB has index zero
     """
     return {permute_string(bitstring[::-1], permutation)[::-1]: value for bitstring, value in counts.items()}
 
@@ -204,7 +204,7 @@ def counts2fractions(
 
 
 def normalize_probability(probabilities: FloatArray) -> FloatArray:
-    """Normalize probabilties to have sum 1 and in interval [0, 1]"""
+    """Normalize probabilities to have sum 1 and in interval [0, 1]"""
     w = np.minimum(np.maximum(probabilities, 0.0), 1.0)
     w = w / np.sum(w)
     return w
@@ -220,7 +220,7 @@ def counts2dense(c: CountsType, number_of_bits: int) -> np.ndarray:
 
 
 def dense2sparse(d: IntArray) -> CountsType:
-    """Convert dictionary with fractions or counts to a dense array"""
+    """Convert a dense array to a sparse counts dictionary"""
     d = np.asanyarray(d)
     number_of_bits = int(np.log2(d.size))
     fmt = f"{{:0{number_of_bits}b}}"
@@ -236,9 +236,18 @@ def normalize_fractions(f: FloatArray) -> FloatArray:
     return f / sum(f)
 
 
-def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
+def circuit2matrix(circuit: QuantumCircuit, decimals: int | None = 5) -> ComplexArray:
+    """Deprecated: use circuit_to_matrix instead"""
+    return circuit_to_matrix(circuit, decimals)
+
+
+def circuit_to_matrix(circuit: QuantumCircuit, decimals: int | None = 5) -> ComplexArray:
     op = qi.Operator(circuit)
-    return op.data
+    U = op.data
+    if decimals is not None:
+        U = np.real_if_close(U)
+        U = np.round(U, decimals=decimals)
+    return U
 
 
 def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]:
@@ -355,11 +364,11 @@ def delay_gate(duration: float, dt: float, round_dt: bool) -> qiskit.circuit.ope
 class ModifyDelayGate(TransformationPass):
     """Return a circuit with small rotation gates removed."""
 
-    def __init__(self, dt: float = 20e-9, round: bool = True) -> None:
+    def __init__(self, dt: float = 20e-9, round_dt: bool = True) -> None:
         """Change delay gates to specified time unit"""
         super().__init__()
 
-        self.round = round
+        self.round_dt = round_dt
         self.dt = dt
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
@@ -374,7 +383,7 @@ class ModifyDelayGate(TransformationPass):
                 params = node.op.params
                 if node.op.unit == "s":
                     logging.info(f"{self.__class__.__name__}: found node with params {params}")
-                    op = delay_gate(params[0], self.dt, self.round)
+                    op = delay_gate(params[0], self.dt, self.round_dt)
                     dag.substitute_node(node, op, inplace=True)
         return dag
 
@@ -382,7 +391,7 @@ class ModifyDelayGate(TransformationPass):
 if __name__ == "__main__":  # pragma: no cover
     qc = QuantumCircuit(1)
     qc.delay(duration=123e-9, unit="s")
-    p = ModifyDelayGate(dt=20e-9, round=True)
+    p = ModifyDelayGate(dt=20e-9, round_dt=True)
     qc = p(qc)
     print(qc.draw())
 

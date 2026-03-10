@@ -79,7 +79,7 @@ class TestQiskit(unittest.TestCase):
         time_unit = 20e-9
         qc = QuantumCircuit(1)
         qc.delay(duration=6.1 * time_unit, unit="s")
-        p = ModifyDelayGate(dt=time_unit, round=True)
+        p = ModifyDelayGate(dt=time_unit, round_dt=True)
         qc = p(qc)
         assert list(qc)[0].operation.duration == 6
 

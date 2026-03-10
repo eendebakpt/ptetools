@@ -5,11 +5,7 @@ from typing import Any
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-
-def make_blocks(size: int, block_size: int) -> list[tuple[int, int]]:
-    number_of_blocks = (size + block_size - 1) // block_size
-    blocks = [(ii * block_size, min(size, (ii + 1) * block_size)) for ii in range(number_of_blocks)]
-    return blocks
+from ptetools.tools import make_blocks  # noqa: F401
 
 
 def parallel_execute(
@@ -29,7 +25,7 @@ def parallel_execute(
         block_size = max(number_of_datapoints // 5, 1)
     blocks = make_blocks(number_of_datapoints, block_size)
 
-    def execution_method(block, **kwargs):
+    def execution_method(block):
         return [method(**data[i]) for i in range(*block)]
 
     parjob = Parallel(n_jobs=n_jobs, return_as="generator")(
