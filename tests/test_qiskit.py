@@ -1,12 +1,14 @@
 import unittest
 
 import numpy as np
+import qiskit.circuit.library
 from qiskit.circuit import QuantumCircuit
 
 from ptetools.qiskit import (
     ModifyDelayGate,
     RemoveGateByName,
     RemoveZeroDelayGate,
+    ReplaceGate,
     bitlist_to_int,
     choi_to_unitary,
     circuit2matrix,
@@ -108,6 +110,19 @@ class TestQiskit(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             normalize_fractions([0, 0.1, 0.34, 0.6]), np.array([0.0, 0.09615385, 0.32692308, 0.57692308])
         )
+
+    def test_ReplaceGate(self):
+        gate = qiskit.circuit.library.CXGate
+        replacement_circuit = QuantumCircuit(2)
+        replacement_circuit.barrier()
+        replacement_circuit.cx(0, 1)
+        replacement_circuit.barrier()
+        qpass = ReplaceGate(gate, replacement_circuit)
+
+        qc = QuantumCircuit(2)
+        qc.cx(0, 1)
+        d = qpass(qc)
+        self.assertEqual(circuit_instruction_names(d), ["barrier", "cx", "barrier"])
 
     def test_RemoveGateByName(self):
         qc = QuantumCircuit(3)

@@ -20,6 +20,7 @@ import qiskit_experiments.framework.containers.figure_data
 import qutip.core.superop_reps
 from qiskit.circuit import Delay
 from qiskit.circuit.quantumcircuit import QuantumCircuit
+from qiskit.converters.circuit_to_dag import circuit_to_dag
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
@@ -321,8 +322,48 @@ class RemoveZeroDelayGate(TransformationPass):
         return dag
 
 
+class ReplaceGate(TransformationPass):
+    def __init__(self, gate: qiskit.circuit.Gate, replacement_circuit: QuantumCircuit):
+        """Decompose specified gate into
+
+        Args:
+
+        """
+        super().__init__()
+        self.gate = gate
+        self.replacement_circuit = replacement_circuit
+
+        self.replacement_dag = circuit_to_dag(self.replacement_circuit)
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the Decompose pass on `dag`.
+
+        Args:
+            dag: input dag.
+
+        Returns:
+            output dag where ``CX`` was expanded.
+        """
+        # Walk through the DAG and expand each non-basis node
+        for node in dag.op_nodes(self.gate):
+            dag.substitute_node_with_dag(node, self.replacement_dag)
+        return dag
+
+
 if __name__ == "__main__":  # pragma: no cover
     from qiskit.transpiler import PassManager
+
+    gate = qiskit.circuit.library.CXGate
+    replacement_circuit = QuantumCircuit(2)
+    replacement_circuit.barrier()
+    replacement_circuit.cx(0, 1)
+    replacement_circuit.barrier()
+
+    qc = QuantumCircuit(2)
+    qc.cx(0, 1)
+    qpass = ReplaceGate(gate, replacement_circuit)
+    d = qpass(qc)
+    print(d.draw())
 
     qc = QuantumCircuit(2)
     qc.delay(0, 0)
