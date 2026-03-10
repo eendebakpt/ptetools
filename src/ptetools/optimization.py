@@ -121,7 +121,7 @@ class AverageDecreaseTermination:
 
 
 class OptimizerCallback:
-    _column_names: tuple[str, str, str] = ("iteration", "timestamp", "residual")
+    _column_names: list[str] = ["iteration", "timestamp", "residual"]
 
     def __init__(self, show_progress: bool = False, store_data: bool = True, residual_fitting: bool = True) -> None:
         """Class to collect data of optimization procedures
@@ -144,7 +144,7 @@ class OptimizerCallback:
     def data(self) -> pd.DataFrame:
         """Return data gathered by callback"""
 
-        df = pd.DataFrame(self._data, columns=self._column_names)
+        df = pd.DataFrame(self._data, columns=np.array(self._column_names))
 
         return df
 

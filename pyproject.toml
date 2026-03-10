@@ -103,6 +103,17 @@ ignore_missing_imports = true
 exclude = "(.*/untitled.*|.*/debug_.*.py|.*/develop_.*.py)"
 
 
+[tool.ty.environment]
+python-version = "3.11"
+
 [tool.ty.rules]
 unresolved-import = "ignore"
+
+[[tool.ty.overrides]]
+include = ["src/ptetools/_qtt.py"]
+[tool.ty.overrides.rules]
+unresolved-attribute = "ignore"
+invalid-argument-type = "ignore"
+invalid-assignment = "ignore"
+possibly-missing-attribute = "ignore"
 

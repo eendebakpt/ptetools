@@ -1,12 +1,14 @@
 import unittest
 
 import numpy as np
+import qiskit.circuit.library
 from qiskit.circuit import QuantumCircuit
 
 from ptetools.qiskit import (
     ModifyDelayGate,
     RemoveGateByName,
     RemoveZeroDelayGate,
+    ReplaceGate,
     bitlist_to_int,
     choi_to_unitary,
     circuit2matrix,
@@ -79,7 +81,7 @@ class TestQiskit(unittest.TestCase):
         time_unit = 20e-9
         qc = QuantumCircuit(1)
         qc.delay(duration=6.1 * time_unit, unit="s")
-        p = ModifyDelayGate(dt=time_unit, round=True)
+        p = ModifyDelayGate(dt=time_unit, round_dt=True)
         qc = p(qc)
         assert list(qc)[0].operation.duration == 6
 
@@ -108,6 +110,19 @@ class TestQiskit(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             normalize_fractions([0, 0.1, 0.34, 0.6]), np.array([0.0, 0.09615385, 0.32692308, 0.57692308])
         )
+
+    def test_ReplaceGate(self):
+        gate = qiskit.circuit.library.CXGate
+        replacement_circuit = QuantumCircuit(2)
+        replacement_circuit.barrier()
+        replacement_circuit.cx(0, 1)
+        replacement_circuit.barrier()
+        qpass = ReplaceGate(gate, replacement_circuit)
+
+        qc = QuantumCircuit(2)
+        qc.cx(0, 1)
+        d = qpass(qc)
+        self.assertEqual(circuit_instruction_names(d), ["barrier", "cx", "barrier"])
 
     def test_RemoveGateByName(self):
         qc = QuantumCircuit(3)
@@ -187,11 +202,11 @@ class TestQiskit(unittest.TestCase):
 
     def test_fractions2counts_no_rounding(self):
         fractions = {0: 0.1, 1: 0.8, 2: 0.1}
-        counts = fractions2counts(fractions, 100, integer_rounding=False)
+        counts = fractions2counts(fractions, 100, integer_rounding=False)  # ty: ignore[invalid-argument-type]
         assert counts == {0: 10.0, 1: 80.0, 2: 10.0}
 
         fractions_list = [{0: 0.5, 1: 0.5}, {0: 0.25, 1: 0.75}]
-        counts_list = fractions2counts(fractions_list, 100, integer_rounding=False)
+        counts_list = fractions2counts(fractions_list, 100, integer_rounding=False)  # ty: ignore[invalid-argument-type]
         assert counts_list == [{0: 50.0, 1: 50.0}, {0: 25.0, 1: 75.0}]
 
     def test_choi_to_unitary(self):

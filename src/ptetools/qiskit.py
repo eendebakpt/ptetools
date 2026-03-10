@@ -4,7 +4,7 @@ import math
 import pathlib
 import random
 import tempfile
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from functools import lru_cache
 from typing import Any, overload
 
@@ -20,13 +20,14 @@ import qiskit_experiments.framework.containers.figure_data
 import qutip.core.superop_reps
 from qiskit.circuit import Delay
 from qiskit.circuit.quantumcircuit import QuantumCircuit
+from qiskit.converters.circuit_to_dag import circuit_to_dag
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
 from qutip import Qobj
 
-CountsType = dict[str, int | float]
-FractionsType = dict[str, float]
+CountsType = Mapping[str, int | float]
+FractionsType = Mapping[str, float]
 IntArray = np.typing.NDArray[np.int64 | np.int32]
 IntArrayLike = np.typing.NDArray[np.int64 | np.int32] | list[int] | tuple[int, ...]
 FloatArray = np.typing.NDArray[np.float64]
@@ -36,7 +37,7 @@ ComplexArray = np.typing.NDArray[np.complex128]
 # %% Bit conversions
 
 
-def generate_bitstring_tuples(number_of_bits: int) -> Iterator[tuple[str]]:
+def generate_bitstring_tuples(number_of_bits: int) -> Iterator[tuple[int, ...]]:
     return itertools.product(*((0, 1),) * (number_of_bits))
 
 
@@ -80,14 +81,14 @@ def permute_bits(idx: int, permutation: Sequence[int]) -> int:
 
 def permute_string(string: str, permutation: Sequence[int]) -> str:
     """Permute string characters"""
-    permuted = [string[pidx] for idx, pidx in enumerate(permutation)]
+    permuted = [string[pidx] for pidx in permutation]
     return "".join(permuted)
 
 
 def permute_counts(counts: CountsType, permutation: Sequence[int]) -> CountsType:
     """Permute bits in a counts for fractions object
 
-    For the bits we use the Qiskit convetion: LSB has index zero
+    For the bits we use the Qiskit convention: LSB has index zero
     """
     return {permute_string(bitstring[::-1], permutation)[::-1]: value for bitstring, value in counts.items()}
 
@@ -116,7 +117,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     np.testing.assert_array_equal(invert_permutation([0, 1, 3, 2]), np.array([0, 1, 3, 2]))
 
-    counts = {"1110": 945, "0010": 7, "1011": 16}
+    counts: CountsType = {"1110": 945, "0010": 7, "1011": 16}
     permutation = [1, 0, 2, 3]
     assert permute_counts(counts, permutation) == {"1101": 945, "0001": 7, "1011": 16}
 
@@ -204,7 +205,7 @@ def counts2fractions(
 
 
 def normalize_probability(probabilities: FloatArray) -> FloatArray:
-    """Normalize probabilties to have sum 1 and in interval [0, 1]"""
+    """Normalize probabilities to have sum 1 and in interval [0, 1]"""
     w = np.minimum(np.maximum(probabilities, 0.0), 1.0)
     w = w / np.sum(w)
     return w
@@ -220,7 +221,7 @@ def counts2dense(c: CountsType, number_of_bits: int) -> np.ndarray:
 
 
 def dense2sparse(d: IntArray) -> CountsType:
-    """Convert dictionary with fractions or counts to a dense array"""
+    """Convert a dense array to a sparse counts dictionary"""
     d = np.asanyarray(d)
     number_of_bits = int(np.log2(d.size))
     fmt = f"{{:0{number_of_bits}b}}"
@@ -236,22 +237,31 @@ def normalize_fractions(f: FloatArray) -> FloatArray:
     return f / sum(f)
 
 
-def circuit2matrix(circuit: QuantumCircuit) -> ComplexArray:
+def circuit2matrix(circuit: QuantumCircuit, decimals: int | None = 5) -> ComplexArray:
+    """Deprecated: use circuit_to_matrix instead"""
+    return circuit_to_matrix(circuit, decimals)
+
+
+def circuit_to_matrix(circuit: QuantumCircuit, decimals: int | None = 5) -> ComplexArray:
     op = qi.Operator(circuit)
-    return op.data
+    U = op.data
+    if decimals is not None:
+        U = np.real_if_close(U)
+        U = np.round(U, decimals=decimals)
+    return U
 
 
 def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]:
     """Generate a circuit with a single random Clifford gate"""
-    state = qiskit.QuantumCircuit(number_of_qubits, 0)  #
+    state: QuantumCircuit = qiskit.QuantumCircuit(number_of_qubits, 0)
     if number_of_qubits == 2:
         cl_index = random.randrange(11520)
         cl = CliffordUtils.clifford_2_qubit_circuit(cl_index)
-        state = state.compose(cl, (0, 1))
+        state.compose(cl, (0, 1), inplace=True)
     elif number_of_qubits == 1:
         cl_index = random.randrange(24)
         cl = CliffordUtils.clifford_1_qubit_circuit(cl_index)
-        state = state.compose(cl, (0,))
+        state.compose(cl, (0,), inplace=True)
     else:
         raise NotImplementedError(f"number_of_qubits {number_of_qubits}")
     return state, cl_index
@@ -312,8 +322,48 @@ class RemoveZeroDelayGate(TransformationPass):
         return dag
 
 
+class ReplaceGate(TransformationPass):
+    def __init__(self, gate: type[qiskit.circuit.Gate], replacement_circuit: QuantumCircuit):
+        """Decompose specified gate into
+
+        Args:
+
+        """
+        super().__init__()
+        self.gate = gate
+        self.replacement_circuit = replacement_circuit
+
+        self.replacement_dag = circuit_to_dag(self.replacement_circuit)
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the Decompose pass on `dag`.
+
+        Args:
+            dag: input dag.
+
+        Returns:
+            output dag where ``CX`` was expanded.
+        """
+        # Walk through the DAG and expand each non-basis node
+        for node in dag.op_nodes(self.gate):
+            dag.substitute_node_with_dag(node, self.replacement_dag)
+        return dag
+
+
 if __name__ == "__main__":  # pragma: no cover
     from qiskit.transpiler import PassManager
+
+    gate = qiskit.circuit.library.CXGate
+    replacement_circuit = QuantumCircuit(2)
+    replacement_circuit.barrier()
+    replacement_circuit.cx(0, 1)
+    replacement_circuit.barrier()
+
+    qc = QuantumCircuit(2)
+    qc.cx(0, 1)
+    qpass = ReplaceGate(gate, replacement_circuit)
+    d = qpass(qc)
+    print(d.draw())
 
     qc = QuantumCircuit(2)
     qc.delay(0, 0)
@@ -321,7 +371,7 @@ if __name__ == "__main__":  # pragma: no cover
     qc.delay(0, 1)
     qc.draw()
 
-    passes = [RemoveZeroDelayGate()]
+    passes: list[TransformationPass] = [RemoveZeroDelayGate()]
     pm = PassManager(passes)
     r = pm.run([qc])
     print(r[0].draw())
@@ -355,11 +405,11 @@ def delay_gate(duration: float, dt: float, round_dt: bool) -> qiskit.circuit.ope
 class ModifyDelayGate(TransformationPass):
     """Return a circuit with small rotation gates removed."""
 
-    def __init__(self, dt: float = 20e-9, round: bool = True) -> None:
+    def __init__(self, dt: float = 20e-9, round_dt: bool = True) -> None:
         """Change delay gates to specified time unit"""
         super().__init__()
 
-        self.round = round
+        self.round_dt = round_dt
         self.dt = dt
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:  # qiskit upstream issue
@@ -374,7 +424,7 @@ class ModifyDelayGate(TransformationPass):
                 params = node.op.params
                 if node.op.unit == "s":
                     logging.info(f"{self.__class__.__name__}: found node with params {params}")
-                    op = delay_gate(params[0], self.dt, self.round)
+                    op = delay_gate(params[0], self.dt, self.round_dt)
                     dag.substitute_node(node, op, inplace=True)
         return dag
 
@@ -382,7 +432,7 @@ class ModifyDelayGate(TransformationPass):
 if __name__ == "__main__":  # pragma: no cover
     qc = QuantumCircuit(1)
     qc.delay(duration=123e-9, unit="s")
-    p = ModifyDelayGate(dt=20e-9, round=True)
+    p = ModifyDelayGate(dt=20e-9, round_dt=True)
     qc = p(qc)
     print(qc.draw())
 

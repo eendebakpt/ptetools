@@ -45,7 +45,7 @@ def array2latex(
     header: bool = True,
     hlines=(),
     floatfmt: str = "%g",
-    comment: str | None = None,
+    comment: str | list[str] | None = None,
     hlinespace: None | float = None,
     mode: Literal["tabular", "psmallmatrix", "pmatrix"] = "tabular",
     tabchar: str = "c",
@@ -144,7 +144,8 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
     Example:
     >>> points = np.random.rand(2, 10)
     >>> fig=plt.figure(10); plt.clf()
-    >>> _ = plotPoints(points, '.'); _ = plotLabels(points)
+    >>> _ = plotPoints(points)
+    >>> _ = plotLabels(points)
     """
 
     points = np.asarray(points)
@@ -159,10 +160,10 @@ def plotLabels(points, labels: None | Sequence[str] = None, **kwargs: Any):
         if isinstance(lbl, (int, str)):
             lbl = [str(lbl)]
     ax = plt.gca()
-    th: list[Any] = [None] * npoints
+    th = []
     for ii in range(npoints):
         lbltxt = str(lbl[ii])
-        th[ii] = ax.annotate(lbltxt, points[:, ii], **kwargs)
+        th.append(ax.annotate(lbltxt, tuple(points[:, ii]), **kwargs))
     return th
 
 

@@ -73,7 +73,7 @@ class TestTools(unittest.TestCase):
         assert str(d) == "{'a': 2, 'b': 0}"
 
         with pytest.raises(TypeError):
-            sorted_dictionary(10)
+            sorted_dictionary(10)  # ty: ignore[invalid-argument-type]
 
     def test_short_repr_array(self):
         assert short_repr_array(None) == "None"
@@ -139,12 +139,12 @@ class TestTools(unittest.TestCase):
     def test_array2latex(self):
         array = np.array([[1, 2, 3]])
         for mode in ["tabular", "psmallmatrix", "pmatrix"]:
-            ltx = array2latex(array, header=True, mode=mode, comment="hi")
+            ltx = array2latex(array, header=True, mode=mode, comment="hi")  # ty: ignore[invalid-argument-type]
         assert mode in ltx
-        ltx = array2latex(array, header=True, mode=mode, comment=["hi", "there"])
+        ltx = array2latex(array, header=True, mode=mode, comment=["hi", "there"])  # ty: ignore[invalid-argument-type]
         assert "hi" in ltx
         with pytest.raises(ValueError):
-            _ = array2latex(array, mode="nonsense")
+            _ = array2latex(array, mode="nonsense")  # ty: ignore[invalid-argument-type]
 
 
 def test_attribute_context():
