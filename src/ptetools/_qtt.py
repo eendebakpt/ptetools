@@ -149,7 +149,7 @@ def monitorSizes(verbose: int = 0) -> list[tuple[int]]:  # pragma: no cover
 
     nmon = _qd.screenCount()
     monitor_rectangles = [_qd.screenGeometry(ii) for ii in range(nmon)]
-    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]  # ty: ignore
+    monitor_sizes: list[tuple[int]] = [(w.x(), w.y(), w.width(), w.height()) for w in monitor_rectangles]
 
     if verbose:
         for ii, w in enumerate(monitor_sizes):

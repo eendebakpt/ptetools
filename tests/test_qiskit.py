@@ -202,11 +202,11 @@ class TestQiskit(unittest.TestCase):
 
     def test_fractions2counts_no_rounding(self):
         fractions = {0: 0.1, 1: 0.8, 2: 0.1}
-        counts = fractions2counts(fractions, 100, integer_rounding=False)
+        counts = fractions2counts(fractions, 100, integer_rounding=False)  # ty: ignore[invalid-argument-type]
         assert counts == {0: 10.0, 1: 80.0, 2: 10.0}
 
         fractions_list = [{0: 0.5, 1: 0.5}, {0: 0.25, 1: 0.75}]
-        counts_list = fractions2counts(fractions_list, 100, integer_rounding=False)
+        counts_list = fractions2counts(fractions_list, 100, integer_rounding=False)  # ty: ignore[invalid-argument-type]
         assert counts_list == [{0: 50.0, 1: 50.0}, {0: 25.0, 1: 75.0}]
 
     def test_choi_to_unitary(self):

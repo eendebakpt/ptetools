@@ -121,7 +121,7 @@ class AverageDecreaseTermination:
 
 
 class OptimizerCallback:
-    _column_names: tuple[str, str, str] = ("iteration", "timestamp", "residual")
+    _column_names: list[str] = ["iteration", "timestamp", "residual"]
 
     def __init__(self, show_progress: bool = False, store_data: bool = True, residual_fitting: bool = True) -> None:
         """Class to collect data of optimization procedures

@@ -4,7 +4,7 @@ import math
 import pathlib
 import random
 import tempfile
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from functools import lru_cache
 from typing import Any, overload
 
@@ -26,8 +26,8 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit_experiments.library.randomized_benchmarking.clifford_utils import CliffordUtils
 from qutip import Qobj
 
-CountsType = dict[str, int | float]
-FractionsType = dict[str, float]
+CountsType = Mapping[str, int | float]
+FractionsType = Mapping[str, float]
 IntArray = np.typing.NDArray[np.int64 | np.int32]
 IntArrayLike = np.typing.NDArray[np.int64 | np.int32] | list[int] | tuple[int, ...]
 FloatArray = np.typing.NDArray[np.float64]
@@ -253,15 +253,15 @@ def circuit_to_matrix(circuit: QuantumCircuit, decimals: int | None = 5) -> Comp
 
 def random_clifford_circuit(number_of_qubits: int) -> tuple[QuantumCircuit, int]:
     """Generate a circuit with a single random Clifford gate"""
-    state = qiskit.QuantumCircuit(number_of_qubits, 0)  #
+    state: QuantumCircuit = qiskit.QuantumCircuit(number_of_qubits, 0)
     if number_of_qubits == 2:
         cl_index = random.randrange(11520)
         cl = CliffordUtils.clifford_2_qubit_circuit(cl_index)
-        state = state.compose(cl, (0, 1))
+        state.compose(cl, (0, 1), inplace=True)
     elif number_of_qubits == 1:
         cl_index = random.randrange(24)
         cl = CliffordUtils.clifford_1_qubit_circuit(cl_index)
-        state = state.compose(cl, (0,))
+        state.compose(cl, (0,), inplace=True)
     else:
         raise NotImplementedError(f"number_of_qubits {number_of_qubits}")
     return state, cl_index
@@ -323,7 +323,7 @@ class RemoveZeroDelayGate(TransformationPass):
 
 
 class ReplaceGate(TransformationPass):
-    def __init__(self, gate: qiskit.circuit.Gate, replacement_circuit: QuantumCircuit):
+    def __init__(self, gate: type[qiskit.circuit.Gate], replacement_circuit: QuantumCircuit):
         """Decompose specified gate into
 
         Args:
@@ -371,7 +371,7 @@ if __name__ == "__main__":  # pragma: no cover
     qc.delay(0, 1)
     qc.draw()
 
-    passes = [RemoveZeroDelayGate()]
+    passes: list[TransformationPass] = [RemoveZeroDelayGate()]
     pm = PassManager(passes)
     r = pm.run([qc])
     print(r[0].draw())
