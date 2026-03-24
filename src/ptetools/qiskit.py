@@ -18,7 +18,20 @@ import qiskit.quantum_info as qi
 import qiskit.result
 import qiskit_experiments.framework.containers.figure_data
 import qutip.core.superop_reps
-from qiskit.circuit import Delay
+from qiskit.circuit import Delay, Instruction
+from qiskit.circuit.library import (
+    CRXGate,
+    CRYGate,
+    CRZGate,
+    PhaseGate,
+    RXGate,
+    RYGate,
+    RZGate,
+    U1Gate,
+    U2Gate,
+    U3Gate,
+    UGate,
+)
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.converters.circuit_to_dag import circuit_to_dag
 from qiskit.dagcircuit import DAGCircuit
@@ -323,29 +336,38 @@ class RemoveZeroDelayGate(TransformationPass):
 
 
 class ReplaceGate(TransformationPass):
-    def __init__(self, gate: type[qiskit.circuit.Gate], replacement_circuit: QuantumCircuit):
-        """Decompose specified gate into
+    def __init__(
+        self,
+        gate: type[qiskit.circuit.Gate],
+        replacement_circuit: QuantumCircuit,
+        qubits=None,
+    ):
+        """Replace selected gate type optionally on selected qubits.
 
         Args:
-
+            gate: gate type to match (e.g. RXGate).
+            replacement_circuit: circuit used to replace each matching instance.
+            qubits: None to replace all matching gates, or int/list of qubit indices to limit replacement.
         """
         super().__init__()
         self.gate = gate
         self.replacement_circuit = replacement_circuit
-
         self.replacement_dag = circuit_to_dag(self.replacement_circuit)
 
+        if qubits is None:
+            self.qubit_set = None
+        elif isinstance(qubits, int):
+            self.qubit_set = {qubits}
+        else:
+            self.qubit_set = set(qubits)
+
     def run(self, dag: DAGCircuit) -> DAGCircuit:
-        """Run the Decompose pass on `dag`.
-
-        Args:
-            dag: input dag.
-
-        Returns:
-            output dag where ``CX`` was expanded.
-        """
-        # Walk through the DAG and expand each non-basis node
+        """Run the substitution pass on `dag`."""
         for node in dag.op_nodes(self.gate):
+            if self.qubit_set is not None:
+                node_qubits = {dag.qubits.index(q) for q in node.qargs}
+                if not node_qubits <= self.qubit_set:
+                    continue
             dag.substitute_node_with_dag(node, self.replacement_dag)
         return dag
 
@@ -372,7 +394,7 @@ if __name__ == "__main__":  # pragma: no cover
     qc.draw()
 
     passes: list[TransformationPass] = [RemoveZeroDelayGate()]
-    pm = PassManager(passes)
+    pm = PassManager(passes)  # type: ignore[arg-type]
     r = pm.run([qc])
     print(r[0].draw())
 
@@ -468,3 +490,132 @@ if __name__ == "__main__":  # pragma: no cover
         IC = Ur @ U.full().conjugate().T
         IC = np.exp(-np.angle(IC[0, 0]) * 1j) * IC
         np.testing.assert_almost_equal(IC, np.eye(IC.shape[0]))
+
+# %% Vendored from qtt
+
+
+class RemoveSmallRotations(TransformationPass):
+    """Return a circuit with small rotation gates removed."""
+
+    def __init__(self, epsilon: float = 0, modulo2pi: bool = False) -> None:
+        """Remove all small rotations from a circuit
+
+        Args:
+            epsilon: Threshold for rotation angle to be removed
+            modulo2pi: If True, then rotations multiples of 2pi are removed as well
+        """
+        super().__init__()
+
+        self.epsilon = epsilon
+        self._empty_dag1 = circuit_to_dag(QuantumCircuit(1), copy_operations=False)
+        self._empty_dag2 = circuit_to_dag(QuantumCircuit(2), copy_operations=False)
+        self.mod2pi = modulo2pi
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the pass on `dag`.
+        Args:
+            dag: input dag.
+        Returns:
+            Output dag with small rotations removed
+        """
+
+        def modulo_2pi(x: float) -> float:
+            x = float(x)
+            return float(np.mod(x + np.pi, 2 * np.pi) - np.pi)
+
+        for node in dag.op_nodes():
+            if isinstance(node.op, (PhaseGate, RXGate, RYGate, RZGate)):
+                if node.op.is_parameterized():
+                    # for parameterized gates we do not optimize
+                    pass
+                else:
+                    phi = float(node.op.params[0])
+                    if self.mod2pi:
+                        phi = modulo_2pi(phi)
+                    if np.abs(phi) <= self.epsilon:
+                        dag.substitute_node_with_dag(node, self._empty_dag1)
+            elif isinstance(node.op, (CRXGate, CRYGate, CRZGate)):
+                if node.op.is_parameterized():
+                    # for parameterized gates we do not optimize
+                    pass
+                else:
+                    phi = float(node.op.params[0])
+                    if self.mod2pi:
+                        phi = modulo_2pi(phi)
+                    if np.abs(phi) <= self.epsilon:
+                        dag.substitute_node_with_dag(node, self._empty_dag2)
+        return dag
+
+
+def _u2_gate(qc: QuantumCircuit, phi: float, lam: float) -> None:
+    """Add decomposition of U2 gate to quantum circuit"""
+    if phi == 0 and lam == 0:
+        qc.ry(np.pi / 2, 0)
+    else:
+        qc.rz(lam - np.pi / 2, 0)
+        qc.rx(np.pi / 2, 0)
+        qc.rz(phi + np.pi / 2, 0)
+
+
+class DecomposeU(TransformationPass):
+    def __init__(self) -> None:
+        """Decompose U gates into elementary rotations Rx, Ry, Rz
+
+        The U gates are decomposed using McKay decomposition.
+        """
+        super().__init__()
+
+    @staticmethod
+    @lru_cache(maxsize=1000)
+    def _ugate_replacement_circuit(parameters: tuple[float, ...]) -> QuantumCircuit:
+        """Return circuit used for replacement of the U gate"""
+        qc = QuantumCircuit(1)
+
+        match len(parameters):
+            case 3:
+                theta, phi, lam = parameters
+                theta = np.mod(theta, 2 * np.pi)
+                if theta == np.pi / 2:
+                    _u2_gate(qc, phi, lam)
+                elif parameters == (-np.pi / 2, 0, 0) or parameters == (3 * np.pi / 2, 0, 0):
+                    qc.ry(-np.pi / 2, 0)
+                elif parameters == (np.pi, 0, 0) or parameters == (-np.pi, 0, 0):
+                    qc.ry(np.pi, 0)
+                else:
+                    # from https://arxiv.org/pdf/1707.03429.pdf
+                    qc.rz(lam, 0)
+                    qc.rx(np.pi / 2, 0)
+                    qc.rz(theta + np.pi, 0)
+                    qc.rx(np.pi / 2, 0)
+                    qc.rz(phi + np.pi, 0)
+            case 2:
+                _u2_gate(qc, *parameters)
+            case 1:
+                (lam,) = parameters
+                qc.rz(lam, 0)
+            case _:
+                raise ValueError(f"length of parameters {parameters} invalid")
+        return qc
+
+    def ugate_replacement_circuit(self, ugate: Instruction) -> QuantumCircuit:
+        """Return circuit used for replacement of the U gate"""
+        if not isinstance(ugate, (U3Gate, UGate, U2Gate, U1Gate, PhaseGate)):
+            raise Exception(f"unknown gate type {ugate}")
+
+        return self._ugate_replacement_circuit(tuple(ugate.params))
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Run the Decompose pass on `dag`.
+
+        Args:
+            dag: input DAG.
+
+        Returns:
+            Output DAG where ``U`` gates have been decomposed.
+        """
+        # Walk through the DAG and expand each node if required
+        for node in dag.op_nodes():
+            if isinstance(node.op, (PhaseGate, U1Gate, U2Gate, U3Gate, UGate)):
+                subdag = circuit_to_dag(self.ugate_replacement_circuit(node.op), copy_operations=False)
+                dag.substitute_node_with_dag(node, subdag)
+        return dag

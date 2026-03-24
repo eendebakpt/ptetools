@@ -33,7 +33,7 @@ keywords = [
 dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy >= 2.2",
+    "numpy >= 2.3",
     "matplotlib",
     "rich",
     "qtpy",
@@ -77,7 +77,8 @@ notes = ["FIXME", "TODO"]
 
 [tool.coverage.run]
 source = ["./src/ptetools"]
-command_line = "-m pytest tests"
+command_line = "-m pytest --durations 10 tests"
+
 omit = []
 
 [tool.coverage.report]
