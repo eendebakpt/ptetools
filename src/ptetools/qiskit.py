@@ -6,6 +6,7 @@ import random
 import tempfile
 from collections.abc import Iterator, Mapping, Sequence
 from functools import lru_cache
+from numbers import Real
 from typing import Any, overload
 
 import matplotlib.pyplot as plt
@@ -547,10 +548,33 @@ class RemoveSmallRotations(TransformationPass):
         return dag
 
 
-def _u2_gate(qc: QuantumCircuit, phi: float, lam: float) -> None:
+def _is_numeric_parameter(value: Any) -> bool:
+    return isinstance(value, (Real, np.number))
+
+
+def _u2_gate(qc: QuantumCircuit, phi: Any, lam: Any) -> None:
     """Add decomposition of U2 gate to quantum circuit"""
-    if phi == 0 and lam == 0:
+    if _is_numeric_parameter(phi) and _is_numeric_parameter(lam):
+        phi_float = float(phi)
+        lam_float = float(lam)
+    else:
+        phi_float = None
+        lam_float = None
+
+    if (
+        phi_float is not None
+        and lam_float is not None
+        and np.isclose(phi_float, 0.0, atol=1e-12)
+        and np.isclose(lam_float, 0.0, atol=1e-12)
+    ):
         qc.ry(np.pi / 2, 0)
+    elif (
+        phi_float is not None
+        and lam_float is not None
+        and np.isclose(np.mod(phi_float + np.pi, 2 * np.pi) - np.pi, -np.pi / 2, atol=1e-12)
+        and np.isclose(np.mod(lam_float + np.pi, 2 * np.pi) - np.pi, np.pi / 2, atol=1e-12)
+    ):
+        qc.rx(np.pi / 2, 0)
     else:
         qc.rz(lam - np.pi / 2, 0)
         qc.rx(np.pi / 2, 0)
@@ -559,35 +583,71 @@ def _u2_gate(qc: QuantumCircuit, phi: float, lam: float) -> None:
 
 class DecomposeU(TransformationPass):
     def __init__(self) -> None:
-        """Decompose U gates into elementary rotations Rx, Ry, Rz
+        """Decompose U gates into elementary rotations Rx(pi/2), Ry(pi/2), Rz
 
         The U gates are decomposed using McKay decomposition.
         """
         super().__init__()
 
     @staticmethod
+    def _decompose_three_parameter_u(qc: QuantumCircuit, theta: Any, phi: Any, lam: Any) -> None:
+        """Decompose U(theta, phi, lam) into elementary rotations."""
+        if _is_numeric_parameter(theta) and _is_numeric_parameter(phi) and _is_numeric_parameter(lam):
+            theta_float = float(theta)
+            phi_float = float(phi)
+            lam_float = float(lam)
+
+            theta_mod = float(np.mod(theta_float, 2 * np.pi))
+            phi_mod = float(np.mod(phi_float + np.pi, 2 * np.pi) - np.pi)
+            lam_mod = float(np.mod(lam_float + np.pi, 2 * np.pi) - np.pi)
+
+            if (
+                np.isclose(theta_mod, np.pi, atol=1e-12)
+                and np.isclose(phi_mod, -np.pi / 2, atol=1e-12)
+                and np.isclose(lam_mod, np.pi / 2, atol=1e-12)
+            ):
+                qc.rx(np.pi / 2, 0)
+                qc.rx(np.pi / 2, 0)
+                return
+
+            if np.isclose(theta_mod, np.pi / 2, atol=1e-12):
+                _u2_gate(qc, phi_float, lam_float)
+                return
+
+            if np.isclose(phi_float, 0.0, atol=1e-12) and np.isclose(lam_float, 0.0, atol=1e-12):
+                if np.isclose(theta_float, -np.pi / 2, atol=1e-12) or np.isclose(theta_mod, 3 * np.pi / 2, atol=1e-12):
+                    qc.ry(-np.pi / 2, 0)
+                    return
+                if np.isclose(theta_float, np.pi, atol=1e-12) or np.isclose(theta_float, -np.pi, atol=1e-12):
+                    qc.ry(np.pi / 2, 0)
+                    qc.ry(np.pi / 2, 0)
+                    return
+
+            # from https://arxiv.org/pdf/1707.03429.pdf
+            qc.rz(lam_float, 0)
+            qc.rx(np.pi / 2, 0)
+            qc.rz(theta_mod + np.pi, 0)
+            qc.rx(np.pi / 2, 0)
+            qc.rz(phi_float + np.pi, 0)
+            return
+
+        # from https://arxiv.org/pdf/1707.03429.pdf
+        qc.rz(lam, 0)
+        qc.rx(np.pi / 2, 0)
+        qc.rz(theta + np.pi, 0)
+        qc.rx(np.pi / 2, 0)
+        qc.rz(phi + np.pi, 0)
+
+    @staticmethod
     @lru_cache(maxsize=1000)
-    def _ugate_replacement_circuit(parameters: tuple[float, ...]) -> QuantumCircuit:
+    def _ugate_replacement_circuit(parameters: tuple[Any, ...]) -> QuantumCircuit:
         """Return circuit used for replacement of the U gate"""
         qc = QuantumCircuit(1)
 
         match len(parameters):
             case 3:
                 theta, phi, lam = parameters
-                theta = np.mod(theta, 2 * np.pi)
-                if theta == np.pi / 2:
-                    _u2_gate(qc, phi, lam)
-                elif parameters == (-np.pi / 2, 0, 0) or parameters == (3 * np.pi / 2, 0, 0):
-                    qc.ry(-np.pi / 2, 0)
-                elif parameters == (np.pi, 0, 0) or parameters == (-np.pi, 0, 0):
-                    qc.ry(np.pi, 0)
-                else:
-                    # from https://arxiv.org/pdf/1707.03429.pdf
-                    qc.rz(lam, 0)
-                    qc.rx(np.pi / 2, 0)
-                    qc.rz(theta + np.pi, 0)
-                    qc.rx(np.pi / 2, 0)
-                    qc.rz(phi + np.pi, 0)
+                DecomposeU._decompose_three_parameter_u(qc, theta, phi, lam)
             case 2:
                 _u2_gate(qc, *parameters)
             case 1:
@@ -600,7 +660,7 @@ class DecomposeU(TransformationPass):
     def ugate_replacement_circuit(self, ugate: Instruction) -> QuantumCircuit:
         """Return circuit used for replacement of the U gate"""
         if not isinstance(ugate, (U3Gate, UGate, U2Gate, U1Gate, PhaseGate)):
-            raise Exception(f"unknown gate type {ugate}")
+            raise TypeError(f"unsupported gate type {type(ugate).__name__}")
 
         return self._ugate_replacement_circuit(tuple(ugate.params))
 

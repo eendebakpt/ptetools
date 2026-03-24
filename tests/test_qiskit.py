@@ -2,7 +2,8 @@ import unittest
 
 import numpy as np
 import qiskit.circuit.library
-from qiskit.circuit import QuantumCircuit
+from qiskit import transpile
+from qiskit.circuit import Parameter, QuantumCircuit
 from qiskit.circuit.library import PhaseGate, U1Gate, U2Gate, U3Gate, UGate
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 
@@ -290,10 +291,10 @@ class TestQiskit(unittest.TestCase):
 
     def test_delay_gate(self):
         gate = delay_gate(100e-9, 20e-9, round_dt=True)
-        assert gate.params[0] == 5
+        np.testing.assert_allclose(gate.params[0], 5.0, atol=1e-12)
 
         gate_no_round = delay_gate(duration=100e-9, dt=20e-9, round_dt=False)
-        assert gate_no_round.params[0] == 100e-9 / 20e-9
+        np.testing.assert_allclose(gate_no_round.params[0], 100e-9 / 20e-9, atol=1e-12)
 
     def test_fractions2counts_no_rounding(self):
         fractions = {0: 0.1, 1: 0.8, 2: 0.1}
@@ -364,7 +365,7 @@ class TestDecomposeU(unittest.TestCase):
         qc = self.decompose._ugate_replacement_circuit((np.pi / 2, 1.0, 2.0))
         self.assertEqual(qc.num_qubits, 1)
         instruction_names = [instr.operation.name for instr in qc]
-        self.assertTrue(len(instruction_names) > 0)
+        self.assertGreater(len(instruction_names), 0)
 
     def test_ugate_replacement_circuit_special_case_minus_pi_half(self):
         """Test special case when theta = -pi/2"""
@@ -427,7 +428,7 @@ class TestDecomposeU(unittest.TestCase):
         """Test error handling for invalid gate type"""
         # Use a gate that is not one of the supported types
         invalid_gate = qiskit.circuit.library.CXGate()
-        with self.assertRaises(Exception):
+        with self.assertRaises(TypeError):
             self.decompose.ugate_replacement_circuit(invalid_gate)
 
     def test_run_with_u3_gate(self):
@@ -515,6 +516,77 @@ class TestDecomposeU(unittest.TestCase):
         self.assertIn("cx", instruction_names)
         # U gates should be replaced
         self.assertNotIn("u", instruction_names)
+
+    def test_run_with_parameterized_ugate(self):
+        """Test decomposing a parameterized U gate."""
+        theta = Parameter("theta")
+        phi = Parameter("phi")
+        lam = Parameter("lam")
+
+        qc = QuantumCircuit(1)
+        qc.u(theta, phi, lam, 0)
+
+        dag = circuit_to_dag(qc)
+        decomposed_dag = self.decompose.run(dag)
+        decomposed_circuit = dag_to_circuit(decomposed_dag)
+
+        instruction_names = [instr.operation.name for instr in decomposed_circuit]
+        self.assertNotIn("u", instruction_names)
+        self.assertIn("rz", instruction_names)
+        self.assertIn("rx", instruction_names)
+        self.assertEqual(set(decomposed_circuit.parameters), {theta, phi, lam})
+
+    def test_run_with_parameterized_u1_gate(self):
+        """Test decomposing a parameterized U1/phase-like gate."""
+        lam = Parameter("lam")
+
+        qc = QuantumCircuit(1)
+        qc.u(0.0, 0.0, lam, 0)
+
+        dag = circuit_to_dag(qc)
+        decomposed_dag = self.decompose.run(dag)
+        decomposed_circuit = dag_to_circuit(decomposed_dag)
+
+        instruction_names = [instr.operation.name for instr in decomposed_circuit]
+        self.assertNotIn("u", instruction_names)
+        self.assertIn("rz", instruction_names)
+        self.assertEqual(set(decomposed_circuit.parameters), {lam})
+
+    def test_run_special_case_u_pi_minus_pi_half_pi_half(self):
+        """U(pi, -pi/2, pi/2) should decompose to two Rx(pi/2) gates."""
+        qc = QuantumCircuit(1)
+        qc.u(np.pi, -np.pi / 2, np.pi / 2, 0)
+
+        decomposed = dag_to_circuit(self.decompose.run(circuit_to_dag(qc)))
+
+        instruction_names = [instr.operation.name for instr in decomposed]
+        self.assertEqual(instruction_names, ["rx", "rx"])
+        for instr in decomposed:
+            self.assertAlmostEqual(float(instr.operation.params[0]), np.pi / 2, places=12)
+
+    def test_run_rx_pi_half_input_case(self):
+        """Rx(pi/2) transpiled to U should map back to a single Rx(pi/2)."""
+        qc = QuantumCircuit(1)
+        qc.rx(np.pi / 2, 0)
+
+        transpiled_qc = transpile(qc, basis_gates=["u"], optimization_level=0)
+        decomposed = dag_to_circuit(self.decompose.run(circuit_to_dag(transpiled_qc)))
+
+        instruction_names = [instr.operation.name for instr in decomposed]
+        self.assertEqual(instruction_names, ["rx"])
+        self.assertAlmostEqual(float(decomposed[0].operation.params[0]), np.pi / 2, places=12)
+
+    def test_run_ry_pi_half_input_case(self):
+        """Ry(pi/2) transpiled to U should map back to a single Ry(pi/2)."""
+        qc = QuantumCircuit(1)
+        qc.ry(np.pi / 2, 0)
+
+        transpiled_qc = transpile(qc, basis_gates=["u"], optimization_level=0)
+        decomposed = dag_to_circuit(self.decompose.run(circuit_to_dag(transpiled_qc)))
+
+        instruction_names = [instr.operation.name for instr in decomposed]
+        self.assertEqual(instruction_names, ["ry"])
+        self.assertAlmostEqual(float(decomposed[0].operation.params[0]), np.pi / 2, places=12)
 
 
 if __name__ == "__main__":
