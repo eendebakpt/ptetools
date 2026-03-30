@@ -583,7 +583,7 @@ def _u2_gate(qc: QuantumCircuit, phi: Any, lam: Any) -> None:
 
 class DecomposeU(TransformationPass):
     def __init__(self) -> None:
-        """Decompose U gates into elementary rotations Rx(pi/2), Ry(pi/2), Rz
+        """Decompose U gates into elementary rotations Rx(pi/2), Ry(pi/2), Rz(phi)
 
         The U gates are decomposed using McKay decomposition.
         """
@@ -614,7 +614,11 @@ class DecomposeU(TransformationPass):
                 _u2_gate(qc, phi_float, lam_float)
                 return
 
-            if np.isclose(phi_float, 0.0, atol=1e-12) and np.isclose(lam_float, 0.0, atol=1e-12):
+            theta_zero = np.isclose(theta_float, 0.0, atol=1e-12)
+            phi_zero = np.isclose(phi_float, 0.0, atol=1e-12)
+            lam_zero = np.isclose(lam_float, 0.0, atol=1e-12)
+
+            if phi_zero and lam_zero:
                 if np.isclose(theta_float, -np.pi / 2, atol=1e-12) or np.isclose(theta_mod, 3 * np.pi / 2, atol=1e-12):
                     qc.ry(-np.pi / 2, 0)
                     return
@@ -629,6 +633,12 @@ class DecomposeU(TransformationPass):
             qc.rz(theta_mod + np.pi, 0)
             qc.rx(np.pi / 2, 0)
             qc.rz(phi_float + np.pi, 0)
+            return
+
+        theta_zero = _is_numeric_parameter(theta) and np.isclose(theta, 0.0, atol=1e-12)
+        phi_zero = _is_numeric_parameter(phi) and np.isclose(phi, 0.0, atol=1e-12)
+        if theta_zero and phi_zero:
+            qc.rz(lam, 0)
             return
 
         # from https://arxiv.org/pdf/1707.03429.pdf
