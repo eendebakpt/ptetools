@@ -189,9 +189,9 @@ if __name__ == "__main__":  # pragma: no cover
     np.testing.assert_array_equal(r, [21, 20, 20, 20, 19])
     print(r, sum(r))
 
-    fractions = dict(zip(range(3), [10.1, 80.4, 9.6]))
-    assert fractions2counts(fractions, 100) == {0: 10, 1: 80, 2: 10}
-    assert fractions2counts(fractions, 1024) == {0: 103, 1: 823, 2: 98}
+    fractions = dict(zip([str(i) for i in range(3)], [10.1, 80.4, 9.6]))
+    assert fractions2counts(fractions, 100) == {"0": 10, "1": 80, "2": 10}
+    assert fractions2counts(fractions, 1024) == {"0": 103, "1": 823, "2": 98}
 
 
 @overload

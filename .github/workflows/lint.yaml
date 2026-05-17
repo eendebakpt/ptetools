@@ -20,4 +20,4 @@ jobs:
       - name: Run Ruff format
         run: ruff format .
       - name: Run ty
-        run: ty check src\
+        run: ty check src/
