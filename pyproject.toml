@@ -21,8 +21,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -31,7 +29,7 @@ classifiers = [
 keywords = [
 ]
 dynamic = ["version"]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "numpy >= 2.3",
     "matplotlib",
@@ -92,7 +90,7 @@ lint.ignore = [
            "E712" # https://github.com/astral-sh/ruff/issues/4560
         ]
 line-length = 120
-target-version = "py311"
+target-version = "py312"
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 
 lint.per-file-ignores = { "*.ipynb" = ["E703", "B015", "B018"] } # see https://github.com/astral-sh/ruff/issues/7300
@@ -105,7 +103,7 @@ exclude = "(.*/untitled.*|.*/debug_.*.py|.*/develop_.*.py)"
 
 
 [tool.ty.environment]
-python-version = "3.11"
+python-version = "3.12"
 
 [tool.ty.rules]
 unresolved-import = "ignore"
