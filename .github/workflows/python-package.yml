@@ -36,9 +36,9 @@ jobs:
       run: uv pip install .
     - name: Test with pytest and coverage
       run: |
-        uv coverage run -m pytest
-        uv coverage report -m
-        uv coverage xml
+        coverage run
+        coverage report -m
+        coverage xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       if: matrix.python-version == '3.11'

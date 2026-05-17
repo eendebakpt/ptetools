@@ -1,26 +1,57 @@
 import io
+import logging
 import time
 import unittest
 from contextlib import redirect_stdout
+from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 from IPython.lib.pretty import pretty
 
 from ptetools.tools import (
+    ReprPrettyTester,
     add_rich_repr,
+    array2latex,
     attribute_context,
     cprint,
+    flatten,
+    fmt_dict,
+    interleaved_benchmark,
+    is_spyder_environment,
+    logging_context,
     make_blocks,
     measure_time,
     memory_report,
     plotLabels,
     profile_expression,
+    robust_cost_function,
+    short_repr_array,
+    short_repr_attribute,
     sorted_dictionary,
 )
 
 
+@add_rich_repr
+@dataclass
+class A:
+    x: int = 10
+    y: str = "hi"
+
+
 class TestTools(unittest.TestCase):
+    def test_ReprPrettyTester(self):
+        r = ReprPrettyTester(A())
+        assert "A" in r.txt
+        r = ReprPrettyTester(ReprPrettyTester(A()))
+        assert "ReprPrettyTester" in r.txt
+
+    def test_fmt_dict(self):
+        assert fmt_dict({}) == "{}"
+        assert fmt_dict({0: 1}, add_braces=False) == "0: 1.00"
+        assert fmt_dict({"a": 1 / 3}) == "{a: 0.33}"
+
     def test_measure_time(self):
         with redirect_stdout(io.StringIO()) as f:
             with measure_time("hi") as m:
@@ -33,12 +64,26 @@ class TestTools(unittest.TestCase):
             self.assertIsInstance(m.current_delta_time, float)
             self.assertTrue(m.current_delta_time >= 0, "current time must always be positive")
 
-    def sorted_dictionary(self):
+    def test_logging_context(self):
+        with logging_context(logging.ERROR):
+            logging.info("should not be displayed")
+
+    def test_sorted_dictionary(self):
         d = sorted_dictionary({"b": 0, "a": 2})
         assert str(d) == "{'a': 2, 'b': 0}"
 
         with pytest.raises(TypeError):
-            sorted_dictionary(10)
+            sorted_dictionary(10)  # ty: ignore[invalid-argument-type]
+
+    def test_short_repr_array(self):
+        assert short_repr_array(None) == "None"
+        assert short_repr_array(np.array([1])) == "numpy.ndarray(shape=(1,))"
+
+    def test_short_repr_attribute(self):
+        assert short_repr_attribute(None) == "None"
+        for value in [1, 1.0, True]:
+            assert short_repr_attribute(value) == repr(value)
+        assert "tuple" in short_repr_attribute((1, 2))
 
     def test_make_blocks(self):
         assert make_blocks(5, 2) == [(0, 2), (2, 4), (4, 5)]
@@ -50,18 +95,56 @@ class TestTools(unittest.TestCase):
     def test_plotLabels(self):
         plt.figure(1)
         plotLabels([[0, 1, 4, 5], [2, 3, 2, 3]])
+        plotLabels(
+            [
+                [0, 1],
+                [
+                    2,
+                    3,
+                ],
+            ],
+            labels=["a", "b"],
+        )
         plt.close(1)
 
     def test_memory_report(self):
-        x = memory_report(2, verbose=0)
-        assert "<class 'dict'>" in x
+        x = memory_report(6, verbose=False)
+        assert "<class 'tuple'>" in x
 
     def test_profile_expression(self):
         _ = profile_expression("import time", gui=None)
+        filename, _ = profile_expression("import time", gui=None, N=None)
+        assert isinstance(filename, str)
 
+    def test_interleaved_benchmark(self):
+        def method():
+            return list(range(4))
 
-#    def test_monitorSizes(self):
-#        monitorSizes()
+        with redirect_stdout(io.StringIO()) as f:
+            _ = interleaved_benchmark(method, method)
+        assert "gain" in f.getvalue()
+
+        def method_kwargs(*args):
+            return len(args)
+
+        with redirect_stdout(io.StringIO()) as f:
+            _ = interleaved_benchmark(method_kwargs, method_kwargs, 100)
+
+        def method_kwargs(**kwargs):
+            return len(kwargs)
+
+        with redirect_stdout(io.StringIO()) as f:
+            _ = interleaved_benchmark(method_kwargs, method_kwargs, a="alpha")
+
+    def test_array2latex(self):
+        array = np.array([[1, 2, 3]])
+        for mode in ["tabular", "psmallmatrix", "pmatrix"]:
+            ltx = array2latex(array, header=True, mode=mode, comment="hi")  # ty: ignore[invalid-argument-type]
+        assert mode in ltx
+        ltx = array2latex(array, header=True, mode=mode, comment=["hi", "there"])  # ty: ignore[invalid-argument-type]
+        assert "hi" in ltx
+        with pytest.raises(ValueError):
+            _ = array2latex(array, mode="nonsense")  # ty: ignore[invalid-argument-type]
 
 
 def test_attribute_context():
@@ -89,5 +172,72 @@ def test_add_rich_repr():
     assert "AAA" in pretty(a)
 
 
-if __name__ == "__main__":
+def test_robust_cost_function():
+    x = np.linspace(0, 2, 11)
+    methods = robust_cost_function(x, 5, "show")
+    for method in methods:
+        _ = robust_cost_function(x, "auto", method=method)
+
+    x = np.array([0, 0.1, 0.5, 1])
+    np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "L1"), [0.0, 0.1, 0.5, 0.5])
+    np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "L2"), [0.0, 0.01, 0.25, 0.5])
+    np.testing.assert_almost_equal(robust_cost_function(x, 0.5, "cauchy"), [0.0, 0.03922071, 0.69314718, 1.60943791])
+
+
+def test_is_spyder_environment():
+    import os
+
+    result = is_spyder_environment()
+    assert isinstance(result, bool)
+
+    original_env = os.environ.get("SPY_TESTING")
+    try:
+        os.environ["SPY_TESTING"] = "1"
+        assert is_spyder_environment() is True
+
+        if "SPY_TESTING" in os.environ:
+            del os.environ["SPY_TESTING"]
+        assert is_spyder_environment() is False
+    finally:
+        if original_env is not None:
+            os.environ["SPY_TESTING"] = original_env
+        elif "SPY_TESTING" in os.environ:
+            del os.environ["SPY_TESTING"]
+
+
+def test_flatten():
+    assert flatten([[1, 2], [3, 4], [10]]) == [1, 2, 3, 4, 10]
+    assert flatten([[], [1], []]) == [1]
+    assert flatten([]) == []
+    assert flatten([[1, 2, 3]]) == [1, 2, 3]
+    assert flatten([["a", "b"], ["c"]]) == ["a", "b", "c"]
+
+
+def test_robust_cost_function_none_threshold():
+    x = np.array([1.0, 2.0, 3.0])
+    result = robust_cost_function(x, thr=None)
+    np.testing.assert_array_equal(result, x)
+
+
+def test_robust_cost_function_methods():
+    x = np.array([0.5, 1.0, 1.5, 2.0])
+    thr = 1.0
+
+    result_bz = robust_cost_function(x, thr, "BZ")
+    assert result_bz is not None
+
+    result_bz0 = robust_cost_function(x, thr, "BZ0")
+    assert result_bz0 is not None
+
+    result_cg = robust_cost_function(x, thr, "cg")
+    assert result_cg is not None
+
+    result_huber = robust_cost_function(x, thr, "huber")
+    assert result_huber is not None
+
+    with pytest.raises(ValueError):
+        robust_cost_function(x, thr, "invalid_method")
+
+
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

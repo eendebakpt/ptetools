@@ -25,7 +25,7 @@ SOFTWARE.
 import datetime
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,7 +38,7 @@ class OptimizerLog:
     values: list
     parameters: list
 
-    def update(self, count, parameters, mean, _metadata):
+    def update(self, count, parameters, mean, _metadata):  # pragma: no cover
         self.values.append(mean)
         self.parameters.append(parameters)
         print(f"Running circuit {count}: mean {mean:.2f}", end="\r\n", flush=True)
@@ -52,9 +52,6 @@ class OptimizerLog:
             ax = plt.gca()
         # Plot energy and reference value
         ax.plot(self.values, label="Cost")
-
-        # best_value
-        # plt.axhline(y=-best_value, color="tab:red", ls="--", label="Target")
 
         ax.legend(loc="best")
         ax.set_xlabel("Iteration")
@@ -124,7 +121,7 @@ class AverageDecreaseTermination:
 
 
 class OptimizerCallback:
-    _column_names = ["iteration", "timestamp", "residual"]
+    _column_names: list[str] = ["iteration", "timestamp", "residual"]
 
     def __init__(self, show_progress: bool = False, store_data: bool = True, residual_fitting: bool = True) -> None:
         """Class to collect data of optimization procedures
@@ -147,7 +144,7 @@ class OptimizerCallback:
     def data(self) -> pd.DataFrame:
         """Return data gathered by callback"""
 
-        df = pd.DataFrame(self._data, columns=self._column_names)
+        df = pd.DataFrame(self._data, columns=np.array(self._column_names))
 
         return df
 
@@ -195,7 +192,7 @@ class OptimizerCallback:
         if ax is None:
             ax = plt.gca()
 
-        self.data.plot("iteration", "residual", ax=ax, **kwargs)  # type: ignore
+        self.data.plot("iteration", "residual", ax=ax, **kwargs)
         dt = self.optimization_time()
         residual = self.data["residual"].iloc[-1]
         ax.set_title(f"Optimization total time {dt:.2f} [s], residual {residual:.2g}")
@@ -229,10 +226,11 @@ class OptimizerCallback:
             print(f"#{number_evaluations}, {parameters}, {value}, {stepsize}, {accepted}")
         self.data_callback(number_evaluations, parameters, value)
 
-    def lmfit_callback(self, parameters, iteration, residual, *args, **kws):
+    def lmfit_callback(self, parameters, iteration, residual, *args, **kws):  # pragma: no cover
         """Callback method for lmfit optimizers"""
+        del kws
         if self._residual_fitting:
-            residual = np.linalg.norm(residual)
+            residual = cast(float, np.linalg.norm(residual))
 
         if self.show_progress:
             print(f"#{iteration}, {parameters}, {residual}")
