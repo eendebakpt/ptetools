@@ -146,6 +146,17 @@ class TestTools(unittest.TestCase):
         with pytest.raises(ValueError):
             _ = array2latex(array, mode="nonsense")  # ty: ignore[invalid-argument-type]
 
+    def test_array2latex_options(self):
+        # multi-character tabchar shorter than the number of columns
+        ltx = array2latex(np.array([[1, 2, 3]]), header=True, tabchar="lc")
+        assert r"\begin{tabular}{lcc}" in ltx
+
+        # string-valued array and horizontal lines with spacing
+        string_array = np.array([["a", "b"], ["c", "d"]])
+        ltx = array2latex(string_array, header=True, hlines=[0], hlinespace=1.0)
+        assert "a & b" in ltx
+        assert r"\hline" in ltx
+
 
 def test_attribute_context():
     import sys

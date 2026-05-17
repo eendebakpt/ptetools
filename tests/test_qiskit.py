@@ -11,6 +11,7 @@ from ptetools.qiskit import (
     DecomposeU,
     ModifyDelayGate,
     RemoveGateByName,
+    RemoveSmallRotations,
     RemoveZeroDelayGate,
     ReplaceGate,
     bitlist_to_int,
@@ -108,6 +109,59 @@ class TestQiskit(unittest.TestCase):
         assert c.num_qubits == 1
         c, index = random_clifford_circuit(2)
         assert c.num_qubits == 2
+
+    def test_random_clifford_circuit_invalid_number_of_qubits(self):
+        with self.assertRaises(NotImplementedError):
+            random_clifford_circuit(3)
+
+    def test_RemoveGateByName_repr(self):
+        r = repr(RemoveGateByName("h"))
+        self.assertIn("RemoveGateByName", r)
+        self.assertIn("gate h", r)
+
+    def test_RemoveSmallRotations(self):
+        qc = QuantumCircuit(1)
+        qc.rx(0.0, 0)  # zero rotation, removed
+        qc.rx(0.5, 0)  # kept
+        qc.ry(0.0, 0)  # removed
+        qc.rz(0.0, 0)  # removed
+        qc.p(0.0, 0)  # phase gate, removed
+
+        qc_transpiled = RemoveSmallRotations()(qc)
+        self.assertEqual(circuit_instruction_names(qc_transpiled), ["rx"])
+
+    def test_RemoveSmallRotations_epsilon(self):
+        qc = QuantumCircuit(1)
+        qc.rx(0.05, 0)  # below threshold, removed
+        qc.rx(0.5, 0)  # kept
+
+        qc_transpiled = RemoveSmallRotations(epsilon=0.1)(qc)
+        self.assertEqual(circuit_instruction_names(qc_transpiled), ["rx"])
+
+    def test_RemoveSmallRotations_modulo2pi(self):
+        qc = QuantumCircuit(1)
+        qc.rx(2 * np.pi, 0)  # multiple of 2pi, removed only with modulo2pi
+
+        self.assertEqual(circuit_instruction_names(RemoveSmallRotations()(qc)), ["rx"])
+        self.assertEqual(circuit_instruction_names(RemoveSmallRotations(modulo2pi=True)(qc)), [])
+
+    def test_RemoveSmallRotations_parameterized(self):
+        theta = Parameter("theta")
+        qc = QuantumCircuit(1)
+        qc.rx(theta, 0)  # parameterized gates are not optimized
+
+        qc_transpiled = RemoveSmallRotations()(qc)
+        self.assertEqual(circuit_instruction_names(qc_transpiled), ["rx"])
+
+    def test_RemoveSmallRotations_controlled(self):
+        qc = QuantumCircuit(2)
+        qc.crx(0.0, 0, 1)  # removed
+        qc.cry(0.0, 0, 1)  # removed
+        qc.crz(0.0, 0, 1)  # removed
+        qc.crx(0.5, 0, 1)  # kept
+
+        qc_transpiled = RemoveSmallRotations()(qc)
+        self.assertEqual(circuit_instruction_names(qc_transpiled), ["crx"])
 
     def test_normalize_fractions(self):
         np.testing.assert_array_equal(normalize_fractions(np.array([0, 1.001])), [0, 1])
