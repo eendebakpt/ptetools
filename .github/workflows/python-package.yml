@@ -33,7 +33,7 @@ jobs:
         uv pip install --system pytest uv coverage ty
         if [ -f requirements.txt ]; then uv pip install --system -r requirements.txt; fi
     - name: Install package
-      run: uv pip install --system .
+      run: uv pip install --system -e .
     - name: Test with pytest and coverage
       run: |
         coverage run
