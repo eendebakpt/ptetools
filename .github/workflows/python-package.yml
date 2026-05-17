@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.14"]
+        python-version: ["3.12", "3.14"]
 
     steps:
     - uses: actions/checkout@v4
@@ -30,20 +30,18 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pytest uv coverage ty
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        uv pip install --system pytest uv coverage ty
+        if [ -f requirements.txt ]; then uv pip install --system -r requirements.txt; fi
     - name: Install package
-      run: |
-        python -m pip install .
+      run: uv pip install --system -e .
     - name: Test with pytest and coverage
       run: |
-        python -m pip install -e .
         coverage run
         coverage report -m
         coverage xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
-      if: matrix.python-version == '3.11'
+      if: matrix.python-version == '3.12'
       with:
         files: ./coverage.xml
         fail_ci_if_error: false
